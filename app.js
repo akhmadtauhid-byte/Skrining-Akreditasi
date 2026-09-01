@@ -2,7 +2,7 @@
 // KONFIGURASI — ganti dengan URL Web App Google Apps Script Anda
 // (lihat petunjuk setup di bagian atas file Code.gs)
 // =====================================================================
-const API_ENDPOINT = "GANTI_DENGAN_URL_WEB_APP_GOOGLE_APPS_SCRIPT_ANDA";
+const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbz1qMHx5g34RneKa2wQzHHg-cmze39nk4qQVrAJiB1FvdZFdjUBjvuuauev6_GE8s8K/exec";
 
 const POKJA_NAMES = {
   TKRS: "Tata Kelola Rumah Sakit", KPS: "Kualifikasi dan Pendidikan Staf",
