@@ -6,6 +6,10 @@
 <title>Skoring Kelengkapan Dokumen Akreditasi — RSU Allam Medica</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+</script>
 </head>
 <body>
   <div class="wrap">
@@ -35,12 +39,13 @@
 
     <div class="card">
       <label class="field-label">📄 DOKUMEN YANG DINILAI</label>
-      <textarea id="docText" placeholder="Tempel isi dokumen (SPO, Kebijakan, Pedoman, Program Kerja, dll) di sini, atau unggah file .docx / .txt / .md di bawah..."></textarea>
+      <textarea id="docText" placeholder="Tempel isi dokumen di sini (opsional jika sudah unggah file di bawah), atau unggah satu/lebih file .pdf / .docx / .txt / .md..."></textarea>
       <div class="upload-row">
-        <label class="upload-label" for="fileInput">⬆ <span id="fileLabel">Unggah file (.docx / .txt / .md)</span></label>
-        <input type="file" id="fileInput" accept=".docx,.txt,.md" class="hidden">
+        <label class="upload-label" for="fileInput">⬆ <span id="fileLabel">Tambah dokumen (.pdf / .docx / .txt / .md — bisa lebih dari satu)</span></label>
+        <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.md" class="hidden" multiple>
         <span class="char-count" id="charCount">0 karakter</span>
       </div>
+      <div id="fileList" class="file-list"></div>
     </div>
 
     <div id="errorBox" class="error-box hidden"></div>
