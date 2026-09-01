@@ -23,6 +23,61 @@ const RS_PROFILE = {
     kertas: "A4/F4, HVS 70-80gr",
     penomoran: "[Nomor urut]/[Jenis: PER|SK|SPO]/[Kode Pokja]/D/AM/[Bulan Romawi]/[Tahun] — contoh: 261/SK/PAB/D/AM/VI/2026"
   },
+  boilerplateSK: `KEPUTUSAN DIREKTUR RSU ALLAM MEDICA BUMIAYU
+NOMOR : [ISI: nomor urut]/SK/[ISI: kode pokja, mis. TKRS]/D/AM/[ISI: bulan romawi]/[ISI: tahun]
+TENTANG
+[ISI: JUDUL KEBIJAKAN — HURUF KAPITAL]
+RSU ALLAM MEDICA BUMIAYU
+
+DIREKTUR RSU ALLAM MEDICA BUMIAYU
+
+Menimbang : a. bahwa ...;
+            b. bahwa ...;
+Mengingat : 1. Undang-Undang ...;
+            2. ...;
+
+MEMUTUSKAN
+
+Menetapkan : KEPUTUSAN DIREKTUR RSU ALLAM MEDICA BUMIAYU TENTANG [JUDUL].
+KESATU     : ...
+KEDUA      : ...
+KETIGA     : Keputusan ini berlaku sejak tanggal ditetapkan, dan apabila di kemudian hari terdapat kekeliruan akan dilakukan perbaikan sebagaimana mestinya.
+
+Ditetapkan di : Bumiayu
+Pada tanggal  : [ISI: tanggal]
+Direktur,
+
+dr. Hardyansyah, MPH-MMR`,
+  boilerplatePeraturanDirektur: `PERATURAN DIREKTUR
+RUMAH SAKIT UMUM ALLAM MEDICA BUMIAYU
+NOMOR: [ISI: nomor urut]/PER/[ISI: kode pokja]/D/AM/[ISI: bulan romawi]/[ISI: tahun]
+TENTANG
+[ISI: JUDUL PEDOMAN/PANDUAN/PROGRAM]
+RUMAH SAKIT UMUM ALLAM MEDICA BUMIAYU
+
+DENGAN RAHMAT TUHAN YANG MAHA ESA
+
+DIREKTUR RUMAH SAKIT UMUM ALLAM MEDICA BUMIAYU
+
+Menimbang : a. bahwa ...;
+            b. bahwa berdasarkan pertimbangan huruf a, perlu menetapkan Peraturan Direktur tentang [judul].
+Mengingat : 1. Undang-Undang Nomor 44 Tahun 2009 tentang Rumah Sakit;
+            2. ...;
+
+MEMUTUSKAN
+
+Menetapkan
+KESATU  : [JUDUL DOKUMEN] RUMAH SAKIT UMUM ALLAM MEDICA BUMIAYU;
+KEDUA   : [Isi/lampiran] sebagaimana dimaksud dalam diktum KESATU merupakan bagian tidak terpisahkan dari peraturan ini;
+KETIGA  : Peraturan ini berlaku sejak tanggal ditetapkan dan apabila terdapat kekeliruan akan dilakukan perbaikan sebagaimana mestinya.
+
+Ditetapkan di : Bumiayu
+Pada tanggal  : [ISI: tanggal]
+Direktur,
+
+dr. Hardyansyah, MPH-MMR
+
+[Lampiran: isi lengkap dokumen — BAB/pasal sesuai sistematika jenis dokumennya]`,
   sistematika: {
     "Program Kerja": ["I. PENDAHULUAN","II. LATAR BELAKANG","III. TUJUAN UMUM DAN TUJUAN KHUSUS","IV. KEGIATAN POKOK DAN RINCIAN KEGIATAN (SDM, Fasilitas, Peningkatan Mutu, Keselamatan Pasien, Manajemen Risiko, PPI, Pengembangan Pelayanan, Monev, Rapat, Laporan)","V. CARA MELAKSANAKAN KEGIATAN","VI. SASARAN","VII. JADWAL PELAKSANAAN KEGIATAN","VIII. EVALUASI PELAKSANAAN KEGIATAN DAN PELAPORAN","IX. PENCATATAN, PELAPORAN DAN EVALUASI KEGIATAN"],
     "Pedoman Pengorganisasian": ["BAB I: PENDAHULUAN","BAB II: GAMBARAN UMUM RUMAH SAKIT","BAB III: VISI, MISI, NILAI BUDAYA, MOTTO","BAB IV: STRUKTUR ORGANISASI RS","BAB V: STRUKTUR ORGANISASI UNIT","BAB VI: URAIAN JABATAN","BAB VII: TATA HUBUNGAN KERJA","BAB VIII: KEBUTUHAN KETENAGAAN","BAB IX: PROGRAM ORIENTASI","BAB X: PERTEMUAN/RAPAT","BAB XI: PENCATATAN DAN PELAPORAN","BAB XII: PENUTUP"],
