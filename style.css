@@ -196,6 +196,8 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
   padding: 4px 10px; cursor: pointer;
 }
 .draft-box-actions button:hover { background: var(--ok-bg); }
+.draft-box-actions button.docx-btn { background: var(--teal); color: #fff; border-color: var(--teal); }
+.draft-box-actions button.docx-btn:hover { background: var(--teal-dark); }
 .draft-box pre {
   margin: 0; padding: 16px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;
   line-height: 1.65; color: #1B332F; white-space: pre-wrap; word-wrap: break-word;
@@ -205,3 +207,31 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .footnote { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-faint); margin-top: 20px; }
 
 .hidden { display: none !important; }
+
+/* ===== Login ===== */
+.login-wrap {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: var(--bg); padding: 20px;
+}
+.login-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 32px 28px; max-width: 380px; width: 100%;
+}
+.login-input {
+  width: 100%; font-family: inherit; font-size: 14px; color: var(--teal-deep);
+  background: var(--bg); border: 1px solid var(--border-strong); border-radius: 7px;
+  padding: 10px 12px; margin-top: 7px;
+}
+.login-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(15,107,92,0.18); border-color: var(--teal); }
+
+.user-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px; font-size: 13px; color: var(--text-soft);
+}
+.user-bar #userLabel { font-weight: 500; }
+.logout-btn {
+  font-family: inherit; font-size: 12px; font-weight: 500; color: var(--bad-fg);
+  background: var(--bad-bg); border: 1px solid var(--bad-border); border-radius: 6px;
+  padding: 5px 12px; cursor: pointer;
+}
+.logout-btn:hover { background: #F5D6D2; }
