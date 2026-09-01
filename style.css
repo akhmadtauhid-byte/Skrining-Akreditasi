@@ -173,6 +173,35 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .rekomendasi { font-size: 14px; color: var(--teal); line-height: 1.55; margin: 6px 0 0; }
 .rekomendasi b { font-weight: 500; }
 
+.draft-btn-row { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.draft-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: transparent; border: 1px solid var(--teal); color: var(--teal);
+  font-family: inherit; font-size: 13px; font-weight: 500;
+  border-radius: 6px; padding: 7px 14px; cursor: pointer; transition: all 0.15s;
+}
+.draft-btn:hover:not(:disabled) { background: var(--ok-bg); }
+.draft-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.draft-box { margin-top: 12px; background: #FDFDFC; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; }
+.draft-box-head {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--ok-bg); padding: 9px 14px; border-bottom: 1px solid var(--ok-border);
+}
+.draft-box-head .title { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; color: var(--teal-dark); }
+.draft-box-actions { display: flex; gap: 8px; }
+.draft-box-actions button {
+  font-family: inherit; font-size: 12px; font-weight: 500; color: var(--teal-dark);
+  background: #fff; border: 1px solid var(--ok-border); border-radius: 5px;
+  padding: 4px 10px; cursor: pointer;
+}
+.draft-box-actions button:hover { background: var(--ok-bg); }
+.draft-box pre {
+  margin: 0; padding: 16px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;
+  line-height: 1.65; color: #1B332F; white-space: pre-wrap; word-wrap: break-word;
+  max-height: 480px; overflow-y: auto;
+}
+
 .footnote { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-faint); margin-top: 20px; }
 
 .hidden { display: none !important; }
