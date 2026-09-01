@@ -199,22 +199,31 @@ function showError(msg) { errorBox.textContent = msg; errorBox.classList.remove(
 function hideError() { errorBox.classList.add("hidden"); }
 function clearResults() { results = null; resultsSection.classList.add("hidden"); epResultsEl.innerHTML = ""; }
 
-// ---- Call backend (proxy to Anthropic API) ----
-async function callBackend(system, prompt) {
+// ---- Call backend (proxy to Anthropic API), dengan retry otomatis ----
+async function callBackend(system, prompt, retries = 2) {
   if (!API_ENDPOINT || API_ENDPOINT.indexOf("GANTI_DENGAN") === 0) {
     throw new Error("API_ENDPOINT belum dikonfigurasi. Buka app.js dan isi dengan URL Web App Google Apps Script Anda.");
   }
-  // Dikirim sebagai text/plain agar tidak memicu CORS preflight pada Google Apps Script.
-  const res = await fetch(API_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ system, prompt }),
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  let raw = data.result.trim();
-  raw = raw.replace(/^```json\s*/i, "").replace(/^```\s*/, "").replace(/```\s*$/, "");
-  return JSON.parse(raw);
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      // Dikirim sebagai text/plain agar tidak memicu CORS preflight pada Google Apps Script.
+      const res = await fetch(API_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ system, prompt }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      let raw = data.result.trim();
+      raw = raw.replace(/^```json\s*/i, "").replace(/^```\s*/, "").replace(/```\s*$/, "");
+      return JSON.parse(raw);
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries) await new Promise(r => setTimeout(r, 700 * (attempt + 1)));
+    }
+  }
+  throw lastErr;
 }
 
 // ---- Run analysis ----
@@ -234,11 +243,15 @@ async function runAnalysis() {
   const entry = getStandarListForPokja(currentPokja).find(([c]) => c === currentStandar);
   const stdTextFull = entry ? entry[1] : "";
 
-  let done = 0;
   const total = currentEpList.length;
-  runLabel.textContent = `Menganalisis... (0/${total})`;
+  results = [];
+  resultsSection.classList.remove("hidden");
+  epResultsEl.innerHTML = "";
+  renderSummary(); // tampilkan ringkasan kosong dulu
 
-  const settled = await Promise.all(currentEpList.map(async (ep) => {
+  for (let i = 0; i < currentEpList.length; i++) {
+    const ep = currentEpList[i];
+    runLabel.textContent = `Menganalisis... (${i}/${total})`;
     const maxSkor = skorMax(ep.skor);
     const prompt = `STANDAR: ${currentStandar}
 BUNYI STANDAR: ${stdTextFull}
@@ -260,18 +273,18 @@ Tugas Anda: nilai apakah dokumen di atas memenuhi elemen penilaian ini. Berikan 
 Balas HANYA dengan JSON berikut (tanpa markdown fence, tanpa teks tambahan):
 {"status":"Terpenuhi|Sebagian|Tidak Ada","skor":${maxSkor === 10 ? '"10 atau 5 atau 0"' : '"angka sesuai skala"'},"kajian":"analisa singkat 1-2 kalimat tentang apa yang ditemukan/tidak ditemukan dalam dokumen","rekomendasi":"1 kalimat saran konkret untuk melengkapi jika belum terpenuhi, atau kosongkan jika sudah Terpenuhi penuh"}`;
 
+    let entryResult;
     try {
       const parsed = await callBackend(system, prompt);
-      done++; runLabel.textContent = `Menganalisis... (${done}/${total})`;
-      return { ep, ...parsed };
+      entryResult = { ep, ...parsed };
     } catch (err) {
-      done++; runLabel.textContent = `Menganalisis... (${done}/${total})`;
-      return { ep, status: "Tidak Ada", skor: 0, kajian: "Gagal menganalisis (" + err.message + ")", rekomendasi: "Coba jalankan ulang analisis." };
+      entryResult = { ep, status: "Tidak Ada", skor: 0, kajian: "Gagal menganalisis setelah beberapa percobaan (" + err.message + ")", rekomendasi: "Coba klik \"Jalankan Analisis AI\" lagi." };
     }
-  }));
-
-  results = settled;
-  renderResults();
+    results.push(entryResult);
+    appendResultCard(entryResult);
+    renderSummary();
+    runLabel.textContent = `Menganalisis... (${i + 1}/${total})`;
+  }
 
   runBtn.disabled = false;
   runIcon.textContent = "✨";
@@ -284,7 +297,7 @@ function statusMeta(status) {
   return { cls: "bad", icon: "✕", label: "Tidak Ada" };
 }
 
-function renderResults() {
+function renderSummary() {
   let total = 0, max = 0;
   const counts = { Terpenuhi: 0, Sebagian: 0, "Tidak Ada": 0 };
   results.forEach(r => {
@@ -293,33 +306,32 @@ function renderResults() {
     total += s;
     counts[r.status] = (counts[r.status] || 0) + 1;
   });
-  const pct = max ? Math.round((total / max) * 100) : 0;
+  // total skor maksimal ditampilkan berdasarkan seluruh EP standar (bukan cuma yang sudah dinilai)
+  const fullMax = currentEpList.reduce((sum, ep) => sum + skorMax(ep.skor), 0);
+  const pct = fullMax ? Math.round((total / fullMax) * 100) : 0;
 
-  document.getElementById("statSkor").textContent = `${total}/${max}`;
+  document.getElementById("statSkor").textContent = `${total}/${fullMax}`;
   const statPct = document.getElementById("statPct");
   statPct.textContent = pct + "%";
   statPct.style.color = pct >= 80 ? "var(--ok-fg)" : pct >= 50 ? "var(--warn-fg)" : "var(--bad-fg)";
   document.getElementById("statOk").textContent = counts["Terpenuhi"] || 0;
   document.getElementById("statBad").textContent = (counts["Sebagian"] || 0) + (counts["Tidak Ada"] || 0);
+}
 
-  epResultsEl.innerHTML = "";
-  results.forEach(r => {
-    const meta = statusMeta(r.status);
-    const card = document.createElement("div");
-    card.className = "ep-card";
-    card.innerHTML = `
-      <div class="ep-head">
-        <p class="ep-text">${escapeHtml(r.ep.ep)}</p>
-        <span class="badge ${meta.cls}">${meta.icon} ${meta.label} · ${r.skor}</span>
-      </div>
-      <div class="bukti-line">Bukti diperlukan: ${escapeHtml(bukiLabelFull(r.ep.bukti))}</div>
-      <p class="kajian"><b>Kajian AI: </b>${escapeHtml(r.kajian || "")}</p>
-      ${r.rekomendasi ? `<p class="rekomendasi"><b>Rekomendasi: </b>${escapeHtml(r.rekomendasi)}</p>` : ""}
-    `;
-    epResultsEl.appendChild(card);
-  });
-
-  resultsSection.classList.remove("hidden");
+function appendResultCard(r) {
+  const meta = statusMeta(r.status);
+  const card = document.createElement("div");
+  card.className = "ep-card";
+  card.innerHTML = `
+    <div class="ep-head">
+      <p class="ep-text">${escapeHtml(r.ep.ep)}</p>
+      <span class="badge ${meta.cls}">${meta.icon} ${meta.label} · ${r.skor}</span>
+    </div>
+    <div class="bukti-line">Bukti diperlukan: ${escapeHtml(bukiLabelFull(r.ep.bukti))}</div>
+    <p class="kajian"><b>Kajian AI: </b>${escapeHtml(r.kajian || "")}</p>
+    ${r.rekomendasi ? `<p class="rekomendasi"><b>Rekomendasi: </b>${escapeHtml(r.rekomendasi)}</p>` : ""}
+  `;
+  epResultsEl.appendChild(card);
 }
 
 function escapeHtml(str) {
