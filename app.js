@@ -2,7 +2,7 @@
 // KONFIGURASI — ganti dengan URL Web App Google Apps Script Anda
 // (lihat petunjuk setup di bagian atas file Code.gs)
 // =====================================================================
-const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbz1qMHx5g34RneKa2wQzHHg-cmze39nk4qQVrAJiB1FvdZFdjUBjvuuauev6_GE8s8K/exec";
+const API_ENDPOINT = "GANTI_DENGAN_URL_WEB_APP_GOOGLE_APPS_SCRIPT_ANDA";
 
 const POKJA_NAMES = {
   TKRS: "Tata Kelola Rumah Sakit", KPS: "Kualifikasi dan Pendidikan Staf",
@@ -30,6 +30,8 @@ let currentPokja = "TKRS";
 let currentStandar = "";
 let currentEpList = [];
 let results = null;
+let uploadedFiles = []; // [{id, name, text, pages}]
+let fileIdSeq = 0;
 
 // ---- DOM refs ----
 const pokjaSelect = document.getElementById("pokjaSelect");
@@ -41,6 +43,7 @@ const epCount = document.getElementById("epCount");
 const docTextEl = document.getElementById("docText");
 const fileInput = document.getElementById("fileInput");
 const fileLabel = document.getElementById("fileLabel");
+const fileListEl = document.getElementById("fileList");
 const charCount = document.getElementById("charCount");
 const errorBox = document.getElementById("errorBox");
 const runBtn = document.getElementById("runBtn");
@@ -105,29 +108,91 @@ standarSelect.addEventListener("change", () => {
   refreshStandarBox();
 });
 
-// ---- File upload ----
+// ---- File upload (mendukung banyak file sekaligus) ----
 fileInput.addEventListener("change", async () => {
-  const file = fileInput.files[0];
-  if (!file) return;
-  fileLabel.textContent = file.name;
+  const files = Array.from(fileInput.files || []);
+  if (!files.length) return;
   hideError();
-  try {
-    if (file.name.toLowerCase().endsWith(".docx")) {
-      const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
-      docTextEl.value = result.value;
-    } else {
-      docTextEl.value = await file.text();
+
+  for (const file of files) {
+    const id = ++fileIdSeq;
+    uploadedFiles.push({ id, name: file.name, text: "", pages: null, status: "reading" });
+    renderFileList();
+
+    const name = file.name.toLowerCase();
+    try {
+      let text = "", pages = null;
+      if (name.endsWith(".pdf")) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        pages = pdf.numPages;
+        let fullText = "";
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          fullText += content.items.map(item => item.str).join(" ") + "\n\n";
+        }
+        text = fullText.trim();
+        if (!text) {
+          showError(`"${file.name}" tampaknya hasil scan/foto (tanpa teks digital) — tidak ada teks yang bisa dibaca. Coba unggah versi Word-nya, atau ketik ulang isinya ke kotak dokumen.`);
+        }
+      } else if (name.endsWith(".docx")) {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        text = result.value;
+      } else {
+        text = await file.text();
+      }
+      const f = uploadedFiles.find(x => x.id === id);
+      f.text = text; f.pages = pages; f.status = "done";
+    } catch (err) {
+      const f = uploadedFiles.find(x => x.id === id);
+      f.status = "error"; f.text = "";
+      showError(`Gagal membaca "${file.name}": ` + err.message);
     }
+    renderFileList();
     updateCharCount();
-  } catch (err) {
-    showError("Gagal membaca file: " + err.message);
   }
+
+  fileInput.value = ""; // reset supaya file yang sama bisa diunggah ulang jika perlu
 });
+
+function removeFile(id) {
+  uploadedFiles = uploadedFiles.filter(f => f.id !== id);
+  renderFileList();
+  updateCharCount();
+}
+
+function renderFileList() {
+  fileListEl.innerHTML = "";
+  uploadedFiles.forEach(f => {
+    const chip = document.createElement("div");
+    chip.className = "file-chip" + (f.status === "reading" ? " reading" : "");
+    const pagesInfo = f.status === "reading" ? "membaca..." : f.status === "error" ? "gagal" : (f.pages ? `${f.pages} hlm` : `${f.text.length.toLocaleString("id-ID")} kar`);
+    chip.innerHTML = `<span class="name">${escapeHtml(f.name)}</span><span class="pages">${pagesInfo}</span>`;
+    const btn = document.createElement("button");
+    btn.className = "remove";
+    btn.textContent = "✕";
+    btn.title = "Hapus file ini";
+    btn.addEventListener("click", () => removeFile(f.id));
+    chip.appendChild(btn);
+    fileListEl.appendChild(chip);
+  });
+}
+
+function combinedDocText() {
+  const parts = [];
+  const manual = docTextEl.value.trim();
+  if (manual) parts.push(manual);
+  uploadedFiles.forEach(f => {
+    if (f.text) parts.push(`=== DOKUMEN: ${f.name} ===\n${f.text}`);
+  });
+  return parts.join("\n\n");
+}
 
 docTextEl.addEventListener("input", updateCharCount);
 function updateCharCount() {
-  charCount.textContent = docTextEl.value.length.toLocaleString("id-ID") + " karakter";
+  charCount.textContent = combinedDocText().length.toLocaleString("id-ID") + " karakter total";
 }
 
 function showError(msg) { errorBox.textContent = msg; errorBox.classList.remove("hidden"); }
@@ -156,7 +221,7 @@ async function callBackend(system, prompt) {
 runBtn.addEventListener("click", runAnalysis);
 
 async function runAnalysis() {
-  const docText = docTextEl.value.trim();
+  const docText = combinedDocText();
   if (!docText) { showError("Tempel atau unggah dokumen terlebih dahulu."); return; }
   hideError();
   clearResults();
@@ -187,7 +252,7 @@ SKALA SKOR YANG BERLAKU: ${ep.skor}
 
 DOKUMEN RUMAH SAKIT YANG DIUNGGAH (untuk dinilai):
 """
-${docText.slice(0, 12000)}
+${docText.slice(0, 60000)}
 """
 
 Tugas Anda: nilai apakah dokumen di atas memenuhi elemen penilaian ini. Berikan penilaian objektif berdasarkan isi dokumen yang benar-benar ada, jangan mengasumsikan sesuatu yang tidak disebutkan.
