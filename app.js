@@ -376,7 +376,14 @@ async function generateDraft(idx, r) {
   const system = `Anda adalah staf Tim Regulasi/Akreditasi RSU Allam Medica Bumiayu yang membuat draft dokumen resmi siap-edit untuk memenuhi Elemen Penilaian akreditasi. Draft harus mengikuti persis identitas dan format tata naskah dinas RSU Allam Medica berikut (JSON):
 ${JSON.stringify(RS_PROFILE)}
 
-Pilih SATU jenis dokumen yang paling tepat untuk EP ini dari daftar sistematika di atas (Program Kerja / Pedoman Pengorganisasian / Pedoman Pelayanan-Penyelenggaraan / Panduan / SPO / Kebijakan-SK Direktur). Tulis draft LENGKAP dan SUBSTANTIF (bukan kerangka kosong) — isi dengan konten yang masuk akal dan konkret untuk RSU Allam Medica, sesuai konteks EP yang diberikan. Tandai bagian yang wajib diisi manual oleh RS (nomor dokumen final, tanggal pasti, nama pejabat penandatangan bila belum diketahui) dengan format [ISI: keterangan]. Jangan gunakan markdown heading (#) — gunakan format naskah dinas biasa (BAB, huruf kapital, dsb). Balas HANYA dengan teks draft dokumennya saja, tanpa basa-basi pembuka/penutup.`;
+ATURAN WAJIB (jangan dilanggar):
+1. SEMUA regulasi (baik "Peraturan Direktur" maupun "Keputusan/SK Direktur") DITETAPKAN DAN DITANDATANGANI OLEH DIREKTUR (dr. Hardyansyah, MPH-MMR) — BUKAN oleh Pemilik/Yayasan/Dewan Pengawas. Jangan pernah menulis "PEMILIK RSU ALLAM MEDICA" sebagai penerbit dokumen.
+2. Jika jenis dokumen berupa Kebijakan/SK, gunakan PERSIS struktur "boilerplateSK" di atas (judul "KEPUTUSAN DIREKTUR...", nomor pakai kode "SK").
+3. Jika jenis dokumen berupa Pedoman/Panduan/Program Kerja (butuh Peraturan Direktur sebagai payung + lampiran isi), gunakan PERSIS struktur "boilerplatePeraturanDirektur" di atas (judul "PERATURAN DIREKTUR...", nomor pakai kode "PER"), lalu lanjutkan dengan isi lampiran sesuai sistematika jenis dokumennya (BAB per BAB, lengkap).
+4. Jika jenis dokumen berupa SPO, gunakan format kotak SPO sesuai "sistematika.SPO" — JANGAN pakai boilerplate SK/Peraturan Direktur untuk SPO.
+5. JANGAN mencampur dua judul/jenis dalam satu dokumen (mis. judul "KEPUTUSAN" tapi nomor pakai kode "PER", atau sebaliknya) — pilih satu dan konsisten dari awal sampai akhir.
+
+Pilih SATU jenis dokumen yang paling tepat untuk EP ini dari daftar sistematika (Program Kerja / Pedoman Pengorganisasian / Pedoman Pelayanan-Penyelenggaraan / Panduan / SPO / Kebijakan-SK Direktur). Tulis draft LENGKAP dan SUBSTANTIF (bukan kerangka kosong) — isi dengan konten yang masuk akal dan konkret untuk RSU Allam Medica, sesuai konteks EP yang diberikan. Tandai bagian yang wajib diisi manual oleh RS (nomor dokumen final, tanggal pasti) dengan format [ISI: keterangan]. Jangan gunakan markdown heading (#) — gunakan format naskah dinas biasa (BAB, huruf kapital, dsb). Balas HANYA dengan teks draft dokumennya saja, tanpa basa-basi pembuka/penutup.`;
 
   const prompt = `STANDAR: ${currentStandar}
 BUNYI STANDAR: ${stdTextFull}
