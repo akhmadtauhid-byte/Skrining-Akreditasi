@@ -27,6 +27,7 @@ function skorMax(skorStr) {
 
 // ---- State ----
 let currentPokja = "TKRS";
+let draftQueue = Promise.resolve(); // antrean supaya draft diproses satu per satu, tidak tabrakan
 let currentStandar = "";
 let currentEpList = [];
 let results = null;
@@ -366,7 +367,16 @@ function appendResultCard(r, idx) {
 async function generateDraft(idx, r) {
   const btn = document.getElementById(`draftBtn-${idx}`);
   const box = document.getElementById(`draftBox-${idx}`);
+  if (btn.disabled) return; // sudah diproses/antre
   btn.disabled = true;
+  btn.textContent = "⏳ Menunggu antrean...";
+
+  // Jalankan lewat antrean supaya tidak ada 2 permintaan draft bersamaan ke backend.
+  draftQueue = draftQueue.then(() => runDraftGeneration(idx, r, btn, box));
+  return draftQueue;
+}
+
+async function runDraftGeneration(idx, r, btn, box) {
   btn.textContent = "⏳ Membuat draft...";
 
   const entry = getStandarListForPokja(currentPokja).find(([c]) => c === currentStandar);
