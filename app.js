@@ -211,7 +211,7 @@ async function callBackend(system, prompt, retries = 2) {
       const res = await fetch(API_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ system, prompt }),
+        body: JSON.stringify({ system, prompt, maxTokens: 700 }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -221,6 +221,30 @@ async function callBackend(system, prompt, retries = 2) {
     } catch (err) {
       lastErr = err;
       if (attempt < retries) await new Promise(r => setTimeout(r, 700 * (attempt + 1)));
+    }
+  }
+  throw lastErr;
+}
+
+// Versi yang mengembalikan teks mentah (bukan JSON) — dipakai untuk generate draft dokumen panjang.
+async function callBackendRaw(system, prompt, maxTokens = 3500, retries = 1) {
+  if (!API_ENDPOINT || API_ENDPOINT.indexOf("GANTI_DENGAN") === 0) {
+    throw new Error("API_ENDPOINT belum dikonfigurasi.");
+  }
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(API_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ system, prompt, maxTokens }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      return data.result.trim();
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries) await new Promise(r => setTimeout(r, 800));
     }
   }
   throw lastErr;
@@ -281,7 +305,7 @@ Balas HANYA dengan JSON berikut (tanpa markdown fence, tanpa teks tambahan):
       entryResult = { ep, status: "Tidak Ada", skor: 0, kajian: "Gagal menganalisis setelah beberapa percobaan (" + err.message + ")", rekomendasi: "Coba klik \"Jalankan Analisis AI\" lagi." };
     }
     results.push(entryResult);
-    appendResultCard(entryResult);
+    appendResultCard(entryResult, i);
     renderSummary();
     runLabel.textContent = `Menganalisis... (${i + 1}/${total})`;
   }
@@ -318,7 +342,7 @@ function renderSummary() {
   document.getElementById("statBad").textContent = (counts["Sebagian"] || 0) + (counts["Tidak Ada"] || 0);
 }
 
-function appendResultCard(r) {
+function appendResultCard(r, idx) {
   const meta = statusMeta(r.status);
   const card = document.createElement("div");
   card.className = "ep-card";
@@ -330,8 +354,78 @@ function appendResultCard(r) {
     <div class="bukti-line">Bukti diperlukan: ${escapeHtml(bukiLabelFull(r.ep.bukti))}</div>
     <p class="kajian"><b>Kajian AI: </b>${escapeHtml(r.kajian || "")}</p>
     ${r.rekomendasi ? `<p class="rekomendasi"><b>Rekomendasi: </b>${escapeHtml(r.rekomendasi)}</p>` : ""}
+    <div class="draft-btn-row">
+      <button class="draft-btn" id="draftBtn-${idx}">📝 Buatkan Draft Pemenuhan</button>
+    </div>
+    <div id="draftBox-${idx}"></div>
   `;
   epResultsEl.appendChild(card);
+  document.getElementById(`draftBtn-${idx}`).addEventListener("click", () => generateDraft(idx, r));
+}
+
+async function generateDraft(idx, r) {
+  const btn = document.getElementById(`draftBtn-${idx}`);
+  const box = document.getElementById(`draftBox-${idx}`);
+  btn.disabled = true;
+  btn.textContent = "⏳ Membuat draft...";
+
+  const entry = getStandarListForPokja(currentPokja).find(([c]) => c === currentStandar);
+  const stdTextFull = entry ? entry[1] : "";
+  const jenisOptions = Object.keys(RS_PROFILE.sistematika).map(k => `- ${k}: ${RS_PROFILE.sistematika[k].join(" | ")}`).join("\n");
+
+  const system = `Anda adalah staf Tim Regulasi/Akreditasi RSU Allam Medica Bumiayu yang membuat draft dokumen resmi siap-edit untuk memenuhi Elemen Penilaian akreditasi. Draft harus mengikuti persis identitas dan format tata naskah dinas RSU Allam Medica berikut (JSON):
+${JSON.stringify(RS_PROFILE)}
+
+Pilih SATU jenis dokumen yang paling tepat untuk EP ini dari daftar sistematika di atas (Program Kerja / Pedoman Pengorganisasian / Pedoman Pelayanan-Penyelenggaraan / Panduan / SPO / Kebijakan-SK Direktur). Tulis draft LENGKAP dan SUBSTANTIF (bukan kerangka kosong) — isi dengan konten yang masuk akal dan konkret untuk RSU Allam Medica, sesuai konteks EP yang diberikan. Tandai bagian yang wajib diisi manual oleh RS (nomor dokumen final, tanggal pasti, nama pejabat penandatangan bila belum diketahui) dengan format [ISI: keterangan]. Jangan gunakan markdown heading (#) — gunakan format naskah dinas biasa (BAB, huruf kapital, dsb). Balas HANYA dengan teks draft dokumennya saja, tanpa basa-basi pembuka/penutup.`;
+
+  const prompt = `STANDAR: ${currentStandar}
+BUNYI STANDAR: ${stdTextFull}
+
+ELEMEN PENILAIAN YANG PERLU DIPENUHI:
+"${r.ep.ep}"
+
+JENIS BUKTI YANG DIPERSYARATKAN: ${bukiLabelFull(r.ep.bukti)}
+DESKRIPSI BUKTI: ${r.ep.buktiDesc}
+
+HASIL KAJIAN SEBELUMNYA (status saat ini: ${r.status}):
+${r.kajian}
+${r.rekomendasi ? "Rekomendasi: " + r.rekomendasi : ""}
+
+Buatkan draft dokumen yang jika diterbitkan akan memenuhi elemen penilaian ini sepenuhnya (skor maksimal).`;
+
+  try {
+    const raw = await callBackendRaw(system, prompt, 3500);
+    box.innerHTML = `
+      <div class="draft-box">
+        <div class="draft-box-head">
+          <span class="title">DRAFT DOKUMEN</span>
+          <div class="draft-box-actions">
+            <button class="copy-btn">Salin</button>
+            <button class="download-btn">Unduh .txt</button>
+          </div>
+        </div>
+        <pre>${escapeHtml(raw)}</pre>
+      </div>
+    `;
+    box.querySelector(".copy-btn").addEventListener("click", async (ev) => {
+      await navigator.clipboard.writeText(raw);
+      ev.target.textContent = "Tersalin ✓";
+      setTimeout(() => { ev.target.textContent = "Salin"; }, 1500);
+    });
+    box.querySelector(".download-btn").addEventListener("click", () => {
+      const blob = new Blob([raw], { type: "text/plain;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `Draft_${currentStandar.replace(/\s+/g, "_")}_${idx + 1}.txt`;
+      a.click();
+    });
+    btn.textContent = "📝 Buat Ulang Draft";
+    btn.disabled = false;
+  } catch (err) {
+    box.innerHTML = `<div class="error-box" style="margin-top:10px;">Gagal membuat draft: ${escapeHtml(err.message)}</div>`;
+    btn.textContent = "📝 Buatkan Draft Pemenuhan";
+    btn.disabled = false;
+  }
 }
 
 function escapeHtml(str) {
