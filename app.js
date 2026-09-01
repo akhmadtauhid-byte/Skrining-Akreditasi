@@ -53,13 +53,19 @@ const runLabel = document.getElementById("runLabel");
 const resultsSection = document.getElementById("resultsSection");
 const epResultsEl = document.getElementById("epResults");
 
-// ---- Init pokja dropdown ----
-POKJA_ORDER.forEach(p => {
-  const opt = document.createElement("option");
-  opt.value = p;
-  opt.textContent = `${p} — ${POKJA_NAMES[p]}`;
-  pokjaSelect.appendChild(opt);
-});
+// ---- Init pokja dropdown (akan diisi ulang sesuai hak akses setelah login, lihat populatePokjaDropdown) ----
+function populatePokjaDropdown(allowedPokja) {
+  pokjaSelect.innerHTML = "";
+  const isAll = !allowedPokja || allowedPokja.includes("ALL");
+  const list = isAll ? POKJA_ORDER : POKJA_ORDER.filter(p => allowedPokja.includes(p));
+  list.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = `${p} — ${POKJA_NAMES[p]}`;
+    pokjaSelect.appendChild(opt);
+  });
+  if (list.length) currentPokja = list[0];
+}
 
 function getStandarListForPokja(pokja) {
   const map = new Map();
@@ -110,6 +116,19 @@ standarSelect.addEventListener("change", () => {
 });
 
 // ---- File upload (mendukung banyak file sekaligus) ----
+const IMAGE_EXT = [".jpg", ".jpeg", ".png", ".webp"];
+const IMAGE_MIME = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
+
+function arrayBufferToBase64(buffer) {
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
 fileInput.addEventListener("change", async () => {
   const files = Array.from(fileInput.files || []);
   if (!files.length) return;
@@ -117,35 +136,45 @@ fileInput.addEventListener("change", async () => {
 
   for (const file of files) {
     const id = ++fileIdSeq;
-    uploadedFiles.push({ id, name: file.name, text: "", pages: null, status: "reading" });
+    const name = file.name.toLowerCase();
+    const isImage = IMAGE_EXT.some(ext => name.endsWith(ext));
+    uploadedFiles.push({ id, name: file.name, text: "", pages: null, status: "reading", isImage, mediaType: "", dataBase64: "" });
     renderFileList();
 
-    const name = file.name.toLowerCase();
     try {
-      let text = "", pages = null;
-      if (name.endsWith(".pdf")) {
+      if (isImage) {
+        const ext = name.split(".").pop();
+        const mediaType = IMAGE_MIME[ext] || "image/jpeg";
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        pages = pdf.numPages;
-        let fullText = "";
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          fullText += content.items.map(item => item.str).join(" ") + "\n\n";
-        }
-        text = fullText.trim();
-        if (!text) {
-          showError(`"${file.name}" tampaknya hasil scan/foto (tanpa teks digital) — tidak ada teks yang bisa dibaca. Coba unggah versi Word-nya, atau ketik ulang isinya ke kotak dokumen.`);
-        }
-      } else if (name.endsWith(".docx")) {
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer });
-        text = result.value;
+        const dataBase64 = arrayBufferToBase64(arrayBuffer);
+        const f = uploadedFiles.find(x => x.id === id);
+        f.mediaType = mediaType; f.dataBase64 = dataBase64; f.status = "done";
       } else {
-        text = await file.text();
+        let text = "", pages = null;
+        if (name.endsWith(".pdf")) {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          pages = pdf.numPages;
+          let fullText = "";
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            fullText += content.items.map(item => item.str).join(" ") + "\n\n";
+          }
+          text = fullText.trim();
+          if (!text) {
+            showError(`"${file.name}" tampaknya hasil scan/foto (tanpa teks digital). Coba unggah sebagai foto/gambar (.jpg/.png) langsung — AI bisa membaca isi gambar, atau unggah versi Word-nya.`);
+          }
+        } else if (name.endsWith(".docx")) {
+          const arrayBuffer = await file.arrayBuffer();
+          const result = await mammoth.extractRawText({ arrayBuffer });
+          text = result.value;
+        } else {
+          text = await file.text();
+        }
+        const f = uploadedFiles.find(x => x.id === id);
+        f.text = text; f.pages = pages; f.status = "done";
       }
-      const f = uploadedFiles.find(x => x.id === id);
-      f.text = text; f.pages = pages; f.status = "done";
     } catch (err) {
       const f = uploadedFiles.find(x => x.id === id);
       f.status = "error"; f.text = "";
@@ -169,8 +198,12 @@ function renderFileList() {
   uploadedFiles.forEach(f => {
     const chip = document.createElement("div");
     chip.className = "file-chip" + (f.status === "reading" ? " reading" : "");
-    const pagesInfo = f.status === "reading" ? "membaca..." : f.status === "error" ? "gagal" : (f.pages ? `${f.pages} hlm` : `${f.text.length.toLocaleString("id-ID")} kar`);
-    chip.innerHTML = `<span class="name">${escapeHtml(f.name)}</span><span class="pages">${pagesInfo}</span>`;
+    let info;
+    if (f.status === "reading") info = "membaca...";
+    else if (f.status === "error") info = "gagal";
+    else if (f.isImage) info = "🖼 gambar";
+    else info = f.pages ? `${f.pages} hlm` : `${f.text.length.toLocaleString("id-ID")} kar`;
+    chip.innerHTML = `<span class="name">${escapeHtml(f.name)}</span><span class="pages">${info}</span>`;
     const btn = document.createElement("button");
     btn.className = "remove";
     btn.textContent = "✕";
@@ -186,9 +219,15 @@ function combinedDocText() {
   const manual = docTextEl.value.trim();
   if (manual) parts.push(manual);
   uploadedFiles.forEach(f => {
-    if (f.text) parts.push(`=== DOKUMEN: ${f.name} ===\n${f.text}`);
+    if (!f.isImage && f.text) parts.push(`=== DOKUMEN: ${f.name} ===\n${f.text}`);
   });
   return parts.join("\n\n");
+}
+
+function combinedImages() {
+  return uploadedFiles
+    .filter(f => f.isImage && f.dataBase64)
+    .map(f => ({ mediaType: f.mediaType, data: f.dataBase64 }));
 }
 
 docTextEl.addEventListener("input", updateCharCount);
@@ -201,7 +240,7 @@ function hideError() { errorBox.classList.add("hidden"); }
 function clearResults() { results = null; resultsSection.classList.add("hidden"); epResultsEl.innerHTML = ""; }
 
 // ---- Call backend (proxy to Anthropic API), dengan retry otomatis ----
-async function callBackend(system, prompt, retries = 2) {
+async function callBackend(system, prompt, images = [], retries = 2) {
   if (!API_ENDPOINT || API_ENDPOINT.indexOf("GANTI_DENGAN") === 0) {
     throw new Error("API_ENDPOINT belum dikonfigurasi. Buka app.js dan isi dengan URL Web App Google Apps Script Anda.");
   }
@@ -212,7 +251,7 @@ async function callBackend(system, prompt, retries = 2) {
       const res = await fetch(API_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ system, prompt, maxTokens: 700 }),
+        body: JSON.stringify({ system, prompt, images, maxTokens: 700, pokja: currentPokja, allowedPokja: session && session.allowedPokja }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -227,8 +266,8 @@ async function callBackend(system, prompt, retries = 2) {
   throw lastErr;
 }
 
-// Versi yang mengembalikan teks mentah (bukan JSON) — dipakai untuk generate draft dokumen panjang.
-async function callBackendRaw(system, prompt, maxTokens = 3500, retries = 1) {
+// Versi yang mengembalikan teks mentah + stopReason (bukan JSON) — dipakai untuk generate draft dokumen panjang.
+async function callBackendRaw(system, prompt, maxTokens = 3500, images = [], retries = 1) {
   if (!API_ENDPOINT || API_ENDPOINT.indexOf("GANTI_DENGAN") === 0) {
     throw new Error("API_ENDPOINT belum dikonfigurasi.");
   }
@@ -238,11 +277,11 @@ async function callBackendRaw(system, prompt, maxTokens = 3500, retries = 1) {
       const res = await fetch(API_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ system, prompt, maxTokens }),
+        body: JSON.stringify({ system, prompt, images, maxTokens, pokja: currentPokja, allowedPokja: session && session.allowedPokja }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      return data.result.trim();
+      return { text: data.result.trim(), stopReason: data.stopReason };
     } catch (err) {
       lastErr = err;
       if (attempt < retries) await new Promise(r => setTimeout(r, 800));
@@ -256,14 +295,15 @@ runBtn.addEventListener("click", runAnalysis);
 
 async function runAnalysis() {
   const docText = combinedDocText();
-  if (!docText) { showError("Tempel atau unggah dokumen terlebih dahulu."); return; }
+  const images = combinedImages();
+  if (!docText && !images.length) { showError("Tempel atau unggah dokumen terlebih dahulu."); return; }
   hideError();
   clearResults();
 
   runBtn.disabled = true;
   runIcon.textContent = "⏳";
 
-  const system = "Anda adalah surveyor akreditasi rumah sakit berpengalaman yang menilai kelengkapan dokumen terhadap Instrumen Survei Akreditasi Rumah Sakit (Kepdirjen Yankes No. HK.02.02/D/47104/2024). Anda bersikap objektif, teliti, dan tidak mengarang bukti yang tidak ada dalam dokumen. Anda HANYA merespons dengan JSON valid, tanpa teks lain, tanpa markdown code fence.";
+  const system = "Anda adalah surveyor akreditasi rumah sakit berpengalaman yang menilai kelengkapan dokumen terhadap Instrumen Survei Akreditasi Rumah Sakit (Kepdirjen Yankes No. HK.02.02/D/47104/2024). Anda bersikap objektif, teliti, dan tidak mengarang bukti yang tidak ada dalam dokumen — termasuk dokumen berupa foto/gambar yang disertakan, baca isinya langsung dari gambar. Anda HANYA merespons dengan JSON valid, tanpa teks lain, tanpa markdown code fence.";
 
   const entry = getStandarListForPokja(currentPokja).find(([c]) => c === currentStandar);
   const stdTextFull = entry ? entry[1] : "";
@@ -290,8 +330,9 @@ SKALA SKOR YANG BERLAKU: ${ep.skor}
 
 DOKUMEN RUMAH SAKIT YANG DIUNGGAH (untuk dinilai):
 """
-${docText.slice(0, 60000)}
+${docText.slice(0, 60000) || "(tidak ada teks yang ditempel — dokumen dilampirkan sebagai gambar/foto, baca langsung isinya dari gambar terlampir)"}
 """
+${images.length ? `\n${images.length} lembar dokumen juga dilampirkan sebagai gambar/foto — baca dan gunakan isinya sebagai bukti tambahan.` : ""}
 
 Tugas Anda: nilai apakah dokumen di atas memenuhi elemen penilaian ini. Berikan penilaian objektif berdasarkan isi dokumen yang benar-benar ada, jangan mengasumsikan sesuatu yang tidak disebutkan.
 
@@ -300,7 +341,7 @@ Balas HANYA dengan JSON berikut (tanpa markdown fence, tanpa teks tambahan):
 
     let entryResult;
     try {
-      const parsed = await callBackend(system, prompt);
+      const parsed = await callBackend(system, prompt, images);
       entryResult = { ep, ...parsed };
     } catch (err) {
       entryResult = { ep, status: "Tidak Ada", skor: 0, kajian: "Gagal menganalisis setelah beberapa percobaan (" + err.message + ")", rekomendasi: "Coba klik \"Jalankan Analisis AI\" lagi." };
@@ -378,6 +419,7 @@ async function generateDraft(idx, r) {
 
 async function runDraftGeneration(idx, r, btn, box) {
   btn.textContent = "⏳ Membuat draft...";
+  const images = combinedImages();
 
   const entry = getStandarListForPokja(currentPokja).find(([c]) => c === currentStandar);
   const stdTextFull = entry ? entry[1] : "";
@@ -411,13 +453,27 @@ ${r.rekomendasi ? "Rekomendasi: " + r.rekomendasi : ""}
 Buatkan draft dokumen yang jika diterbitkan akan memenuhi elemen penilaian ini sepenuhnya (skor maksimal).`;
 
   try {
-    const raw = await callBackendRaw(system, prompt, 3500);
+    btn.textContent = "⏳ Membuat draft...";
+    let raw = "";
+    let stopReason = "";
+    let continuePrompt = prompt;
+    const MAX_ROUNDS = 4; // maksimal 4x8000 token ≈ dokumen sangat panjang, cukup untuk Pedoman 12 BAB sekalipun
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      if (round > 0) btn.textContent = `⏳ Melanjutkan draft (bagian ${round + 1})...`;
+      const res = await callBackendRaw(system, continuePrompt, 8000, images);
+      raw += (round > 0 ? "\n" : "") + res.text;
+      stopReason = res.stopReason;
+      if (stopReason !== "max_tokens") break; // selesai natural, tidak perlu lanjut
+      continuePrompt = `Draft yang sudah ditulis sejauh ini (JANGAN diulang, lanjutkan persis dari kata terakhir tanpa mengulang):\n"""\n${raw.slice(-4000)}\n"""\n\nLanjutkan draft dokumen ini sampai benar-benar selesai (termasuk bagian penutup/tanda tangan jika relevan). Balas HANYA lanjutan teksnya saja.`;
+    }
+
     box.innerHTML = `
       <div class="draft-box">
         <div class="draft-box-head">
-          <span class="title">DRAFT DOKUMEN</span>
+          <span class="title">DRAFT DOKUMEN${stopReason === "max_tokens" ? " (mungkin masih terpotong)" : ""}</span>
           <div class="draft-box-actions">
             <button class="copy-btn">Salin</button>
+            <button class="docx-btn">⬇ Unduh .docx</button>
             <button class="download-btn">Unduh .txt</button>
           </div>
         </div>
@@ -436,6 +492,9 @@ Buatkan draft dokumen yang jika diterbitkan akan memenuhi elemen penilaian ini s
       a.download = `Draft_${currentStandar.replace(/\s+/g, "_")}_${idx + 1}.txt`;
       a.click();
     });
+    box.querySelector(".docx-btn").addEventListener("click", (ev) => {
+      downloadAsDocx(raw, `Draft_${currentStandar.replace(/\s+/g, "_")}_${idx + 1}.docx`, ev.target);
+    });
     btn.textContent = "📝 Buat Ulang Draft";
     btn.disabled = false;
   } catch (err) {
@@ -445,11 +504,143 @@ Buatkan draft dokumen yang jika diterbitkan akan memenuhi elemen penilaian ini s
   }
 }
 
+// ---- Konversi teks draft menjadi file Word (.docx) asli ----
+function downloadAsDocx(rawText, filename, btnEl) {
+  const originalLabel = btnEl.textContent;
+  btnEl.textContent = "⏳ Membuat .docx...";
+  try {
+    const { Document, Packer, Paragraph, TextRun, AlignmentType } = docx;
+    const lines = rawText.split("\n");
+    const children = [];
+
+    const isAllCapsHeading = (line) => {
+      const t = line.trim();
+      if (!t || t.length > 90) return false;
+      const letters = t.replace(/[^A-Za-z]/g, "");
+      return letters.length > 2 && letters === letters.toUpperCase();
+    };
+    const isBabHeading = (line) => /^(BAB\s+[IVXLC]+|[IVXLC]+\.\s|KESATU|KEDUA|KETIGA|KEEMPAT|KELIMA|MENIMBANG|MENGINGAT|MEMUTUSKAN|MENETAPKAN)\b/i.test(line.trim());
+
+    lines.forEach((line) => {
+      const t = line.trim();
+      if (!t) {
+        children.push(new Paragraph({ text: "" }));
+        return;
+      }
+      const heading = isAllCapsHeading(t) || isBabHeading(t);
+      children.push(new Paragraph({
+        alignment: isAllCapsHeading(t) && t.length < 60 ? AlignmentType.CENTER : AlignmentType.LEFT,
+        spacing: { after: 120 },
+        children: [new TextRun({ text: t, bold: heading, size: 22, font: "Arial" })],
+      }));
+    });
+
+    const doc = new Document({
+      sections: [{
+        properties: { page: { margin: { top: 1100, bottom: 1100, left: 1100, right: 1100 } } },
+        children,
+      }],
+    });
+
+    Packer.toBlob(doc).then((blob) => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      btnEl.textContent = originalLabel;
+    }).catch((err) => {
+      alert("Gagal membuat file .docx: " + err.message);
+      btnEl.textContent = originalLabel;
+    });
+  } catch (err) {
+    alert("Gagal membuat file .docx: " + err.message + " (pastikan koneksi internet aktif, library docx perlu dimuat dari CDN)");
+    btnEl.textContent = originalLabel;
+  }
+}
+
 function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;
   return div.innerHTML;
 }
 
+// ===================== LOGIN & SESI PENGGUNA =====================
+const loginScreen = document.getElementById("loginScreen");
+const mainApp = document.getElementById("mainApp");
+const loginUsername = document.getElementById("loginUsername");
+const loginPassword = document.getElementById("loginPassword");
+const loginBtn = document.getElementById("loginBtn");
+const loginError = document.getElementById("loginError");
+const userLabel = document.getElementById("userLabel");
+const logoutBtn = document.getElementById("logoutBtn");
+
+let session = null; // { nama, role, allowedPokja }
+
+function saveSession(s) { localStorage.setItem("skrining_session", JSON.stringify(s)); }
+function loadSession() {
+  try { return JSON.parse(localStorage.getItem("skrining_session")); } catch (e) { return null; }
+}
+function clearSession() { localStorage.removeItem("skrining_session"); }
+
+async function doLogin() {
+  const username = loginUsername.value.trim();
+  const password = loginPassword.value;
+  if (!username || !password) {
+    loginError.textContent = "Username dan password wajib diisi.";
+    loginError.classList.remove("hidden");
+    return;
+  }
+  if (!API_ENDPOINT || API_ENDPOINT.indexOf("GANTI_DENGAN") === 0) {
+    loginError.textContent = "API_ENDPOINT belum dikonfigurasi di app.js.";
+    loginError.classList.remove("hidden");
+    return;
+  }
+  loginBtn.disabled = true;
+  loginBtn.textContent = "Memeriksa...";
+  loginError.classList.add("hidden");
+  try {
+    const res = await fetch(API_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "login", username, password }),
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Login gagal.");
+    session = { nama: data.nama, role: data.role, allowedPokja: data.allowedPokja };
+    saveSession(session);
+    enterApp();
+  } catch (err) {
+    loginError.textContent = err.message;
+    loginError.classList.remove("hidden");
+  }
+  loginBtn.disabled = false;
+  loginBtn.textContent = "Masuk";
+}
+
+function enterApp() {
+  loginScreen.classList.add("hidden");
+  mainApp.classList.remove("hidden");
+  const isAll = session.allowedPokja.includes("ALL");
+  userLabel.textContent = `👤 ${session.nama}${isAll ? " (Admin — semua pokja)" : " — Pokja: " + session.allowedPokja.join(", ")}`;
+  populatePokjaDropdown(session.allowedPokja);
+  refreshStandarDropdown();
+}
+
+loginBtn.addEventListener("click", doLogin);
+loginPassword.addEventListener("keydown", (e) => { if (e.key === "Enter") doLogin(); });
+logoutBtn.addEventListener("click", () => {
+  clearSession();
+  session = null;
+  mainApp.classList.add("hidden");
+  loginScreen.classList.remove("hidden");
+  loginUsername.value = ""; loginPassword.value = "";
+});
+
 // ---- Boot ----
-refreshStandarDropdown();
+const existingSession = loadSession();
+if (existingSession && existingSession.allowedPokja) {
+  session = existingSession;
+  enterApp();
+} else {
+  loginScreen.classList.remove("hidden");
+}
