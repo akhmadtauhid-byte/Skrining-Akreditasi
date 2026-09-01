@@ -94,13 +94,27 @@ select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(15,107,
 .standar-box .count { font-size: 12px; color: var(--text-soft); margin-top: 8px; }
 
 .upload-row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; flex-wrap: wrap; gap: 8px; }
-.upload-label {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-size: 14px; font-weight: 500; color: var(--teal);
-  cursor: pointer;
-}
+.upload-label { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 500; color: var(--teal); cursor: pointer; }
 .upload-label:hover { color: var(--teal-dark); }
 .char-count { font-size: 12px; color: var(--text-faint); }
+
+.file-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.file-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--ok-bg); border: 1px solid var(--ok-border);
+  border-radius: 999px; padding: 5px 8px 5px 12px;
+  font-size: 12.5px; color: #1B332F; max-width: 100%;
+}
+.file-chip .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.file-chip .pages { color: var(--text-faint); font-family: 'IBM Plex Mono', monospace; font-size: 11px; flex-shrink: 0; }
+.file-chip .remove {
+  flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(15,107,92,0.12); color: var(--teal-dark);
+  border: none; cursor: pointer; font-size: 12px; line-height: 1; padding: 0;
+}
+.file-chip .remove:hover { background: rgba(15,107,92,0.25); }
+.file-chip.reading { background: var(--warn-bg); border-color: #EAD9A8; color: #6B4E0C; }
 
 .error-box {
   font-size: 14px; color: var(--bad-fg);
