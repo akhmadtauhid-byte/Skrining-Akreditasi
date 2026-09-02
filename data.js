@@ -84,6 +84,31 @@ dr. Hardyansyah, MPH-MMR
     "Pedoman Pelayanan/Penyelenggaraan": ["BAB I: PENDAHULUAN","BAB II: STANDAR KETENAGAAN","BAB III: STANDAR FASILITAS","BAB IV: KEMAMPUAN PELAYANAN","BAB V: TATA LAKSANA PELAYANAN","BAB VI: LOGISTIK","BAB VII: KESELAMATAN PASIEN","BAB VIII: KESELAMATAN KERJA","BAB IX: PENGENDALIAN MUTU","BAB X: PENUTUP"],
     "Panduan": ["BAB I: PENDAHULUAN","BAB II: RUANG LINGKUP","BAB III: TATA LAKSANA","BAB IV: DOKUMENTASI","KEPUSTAKAAN"],
     "SPO": ["Kotak heading (logo+nama RS, judul, no dokumen, no revisi, halaman, tanggal terbit, ditetapkan direktur)","PENGERTIAN","TUJUAN","KEBIJAKAN (dasar hukum: UU/PP/Permenkes/SK-Perdir terkait)","PROSEDUR (langkah kronologis, dikelompokkan per tahap)","UNIT TERKAIT"],
-    "Kebijakan/SK Direktur": ["KEPUTUSAN DIREKTUR — Menimbang, Mengingat, Memutuskan (diktum KESATU dst)","Lampiran: isi kebijakan lengkap dengan BAB/pasal sesuai materi"]
+    "Kebijakan/SK Direktur": ["KEPUTUSAN DIREKTUR — Menimbang, Mengingat, Memutuskan (diktum KESATU dst)","Lampiran: isi kebijakan lengkap dengan BAB/pasal sesuai materi"],
+    "Checklist/Formulir": ["Kop: logo+nama RS, judul formulir/checklist, nomor dokumen (opsional)","Identitas pengisian: nama unit, tanggal, periode, nama & tanda tangan pengisi/pemeriksa","Tabel isian — kolom disesuaikan konten, minimal: No | Item/Aspek yang Diperiksa atau Dinilai | Hasil (Ya/Tidak, Sesuai/Tidak Sesuai, atau nilai skala) | Keterangan/Temuan","Petunjuk pengisian singkat di atas atau bawah tabel","Kolom kesimpulan/rekomendasi tindak lanjut jika relevan","Kolom tanda tangan pengisi dan mengetahui/menyetujui (atasan)"],
+    "Bukti Pelaksanaan/Laporan Kegiatan": ["Kop: logo+nama RS, judul (Laporan/Notulen/Berita Acara — sesuai konteks)","Waktu dan tempat pelaksanaan","Pihak yang terlibat/peserta (daftar hadir jika relevan)","Uraian/ringkasan pelaksanaan kegiatan","Hasil, temuan, atau capaian","Kendala dan tindak lanjut","Lampiran (foto, daftar hadir, dokumen pendukung — disebutkan sebagai placeholder [ISI: lampiran])","Penutup, nama dan tanda tangan pelapor/notulis serta yang mengetahui"],
+    "Risk Register": ["Kop: logo+nama RS, judul \"RISK REGISTER [unit/topik]\", periode berlaku","Tabel kolom: No | Risiko | Unit/Sumber Risiko | Penyebab | Sumber (Internal/Eksternal) | Controllable/Uncontrollable (C/U) | Probabilitas (1-5) | Dampak (1-5) | Skor (P×D) | Grading (Ekstrem/Tinggi/Sedang/Rendah) | Rencana Tindak Lanjut (RTL) | Penanggung Jawab","Ringkasan: jumlah risiko per grading (mis. X Ekstrem, Y Tinggi, Z Sedang-Rendah)","Rencana review berkala (mis. tiap 3 bulan, dilaporkan ke Direktur)"],
+    "FMEA (Failure Mode and Effect Analysis)": ["Kop: logo+nama RS, judul \"FMEA: [proses berisiko tinggi yang dianalisis]\", tim penyusun & tanggal","Latar belakang pemilihan proses/topik FMEA","Tabel alur proses (langkah-langkah proses yang dipetakan)","Tabel FMEA: No | Tahapan Proses | Failure Mode (Modus Kegagalan) | Penyebab | Efek/Akibat | Severity (1-10) | Occurrence (1-10) | Detectability (1-10) | RPN (Severity×Occurrence×Detectability) | Solusi/Tindakan Perbaikan | Penanggung Jawab & Waktu","Prioritas perbaikan berdasarkan RPN tertinggi","Rencana evaluasi ulang FMEA setelah perbaikan diimplementasikan"],
+    "RCA (Root Cause Analysis)": ["Kop: logo+nama RS, judul \"LAPORAN RCA: [insiden yang dianalisis]\", tim investigator & tanggal analisis (maks. 45 hari sejak kejadian untuk insiden sentinel)","1. Identifikasi insiden yang dianalisis (jenis IKP, grading, tanggal kejadian)","2. Pengumpulan data dan informasi terkait insiden","3. Pemetaan kronologi kejadian (timeline)","4. Identifikasi Care Management Problem (CMP)","5. Analisis akar masalah (5 Why dan/atau Fishbone Diagram — Faktor Pasien, Tugas/Teknologi, Individu/Tim, Lingkungan)","6. Identifikasi akar masalah (contributing factors)","7. Rekomendasi dan rencana tindakan perbaikan (tabel: Rekomendasi | Penanggung Jawab | Waktu Pelaksanaan)","8. Rencana monitoring implementasi dan evaluasi efektivitas"]
+  },
+  metodologiMutuRisiko: {
+    klasifikasiIKP: {
+      KPC: "Kondisi Potensial Cedera — berpotensi cedera, belum terjadi insiden",
+      KNC: "Kejadian Nyaris Cedera — sudah terpapar, belum cedera",
+      KTC: "Kejadian Tidak Cedera — terpapar, tidak menimbulkan cedera",
+      KTD: "Kejadian Tidak Diharapkan — mengakibatkan cedera pada pasien",
+      Sentinel: "KTD yang mengakibatkan kematian/cedera permanen — wajib RCA, selesai maks. 45 hari"
+    },
+    gradingRisikoInsiden: {
+      Biru: "Tidak ada cedera",
+      Hijau: "Cedera ringan",
+      Kuning: "Cedera sedang — wajib RCA",
+      Merah: "Cedera berat/kematian — wajib RCA"
+    },
+    alurPelaporanInsiden: "Insiden terjadi -> Lapor ke Kepala Unit/Tim KPRS -> Grading risiko -> Investigasi (RCA untuk kuning/merah) -> Rekomendasi -> Tindak lanjut & monitoring. Dasar: PMK No. 11 Tahun 2017. Prinsip: wajib lapor, non-punitive, rahasia identitas pelapor & pasien, tepat waktu.",
+    prosesManajemenRisiko7Langkah: ["Komunikasi dan konsultasi","Menetapkan konteks","Identifikasi risiko (sesuai kategori: klinis, K3/keselamatan kerja, MFK/fasilitas, keuangan, operasional, reputasi, dst)","Analisis risiko (probabilitas x dampak)","Evaluasi risiko (grading: Ekstrem/Tinggi/Sedang/Rendah)","Penanganan risiko (mitigasi/kontrol)","Pemantauan dan review risiko berkala"],
+    skoringRisiko: "Skor Risiko = Probabilitas (skala 1-5) x Dampak (skala 1-5). Skor 15-25 = Ekstrem (tindakan segera oleh manajemen puncak), 8-14/10-12 = Tinggi (tindakan oleh manajemen unit), 3-7 = Sedang (SPO/prosedur rutin cukup), 1-2 = Rendah (dipantau berkala).",
+    contohFormatRiskRegisterRS: "Format kolom yang sudah dipakai RSU Allam Medica: No | Risiko | Unit/Sumber Risiko | Sebab | Sumber Risiko (Internal/Eksternal) | C/U (Controllable/Uncontrollable) | Dampak | Rencana Tindak Lanjut (RTL). Contoh baris nyata: 'Kesalahan penulisan identitas pasien di SIMRS dan rekam medis fisik' (TPPRJ, Internal, C) -> RTL: 'Petugas mengkroscek ulang inputan identitas pasien di SIMRS dengan rekam medis fisik sebelum disimpan, verifikasi minimal dua identitas pasien, sosialisasi SPO identifikasi pasien'.",
+    prioritasRisikoRS: "Prioritas manajemen risiko RSU Allam Medica Bumiayu yang wajib diketahui seluruh staf: 'Risiko Downtime Operasional Rumah Sakit Akibat Pemadaman Listrik'."
   }
 };
