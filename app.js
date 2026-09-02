@@ -303,7 +303,12 @@ async function runAnalysis() {
   runBtn.disabled = true;
   runIcon.textContent = "⏳";
 
-  const system = "Anda adalah surveyor akreditasi rumah sakit berpengalaman yang menilai kelengkapan dokumen terhadap Instrumen Survei Akreditasi Rumah Sakit (Kepdirjen Yankes No. HK.02.02/D/47104/2024). Anda bersikap objektif, teliti, dan tidak mengarang bukti yang tidak ada dalam dokumen — termasuk dokumen berupa foto/gambar yang disertakan, baca isinya langsung dari gambar. Anda HANYA merespons dengan JSON valid, tanpa teks lain, tanpa markdown code fence.";
+  const system = `Anda adalah surveyor akreditasi rumah sakit berpengalaman yang menilai kelengkapan dokumen terhadap Instrumen Survei Akreditasi Rumah Sakit (Kepdirjen Yankes No. HK.02.02/D/47104/2024). Anda bersikap objektif, teliti, dan tidak mengarang bukti yang tidak ada dalam dokumen — termasuk dokumen berupa foto/gambar yang disertakan, baca isinya langsung dari gambar.
+
+Jika EP yang dinilai berkaitan dengan manajemen risiko, mutu, insiden keselamatan pasien, MFK, PPI, atau K3RS, gunakan pemahaman metodologi berikut saat menilai kelengkapan bukti (mis. apakah dokumen sudah mencantumkan skoring probabilitas x dampak, grading, RCA 8 langkah, FMEA dengan RPN, dsb — bukan hanya menilai keberadaan dokumennya saja):
+${JSON.stringify(RS_PROFILE.metodologiMutuRisiko)}
+
+Anda HANYA merespons dengan JSON valid, tanpa teks lain, tanpa markdown code fence.`;
 
   const entry = getStandarListForPokja(currentPokja).find(([c]) => c === currentStandar);
   const stdTextFull = entry ? entry[1] : "";
@@ -433,9 +438,24 @@ ATURAN WAJIB (jangan dilanggar):
 2. Jika jenis dokumen berupa Kebijakan/SK, gunakan PERSIS struktur "boilerplateSK" di atas (judul "KEPUTUSAN DIREKTUR...", nomor pakai kode "SK").
 3. Jika jenis dokumen berupa Pedoman/Panduan/Program Kerja (butuh Peraturan Direktur sebagai payung + lampiran isi), gunakan PERSIS struktur "boilerplatePeraturanDirektur" di atas (judul "PERATURAN DIREKTUR...", nomor pakai kode "PER"), lalu lanjutkan dengan isi lampiran sesuai sistematika jenis dokumennya (BAB per BAB, lengkap).
 4. Jika jenis dokumen berupa SPO, gunakan format kotak SPO sesuai "sistematika.SPO" — JANGAN pakai boilerplate SK/Peraturan Direktur untuk SPO.
-5. JANGAN mencampur dua judul/jenis dalam satu dokumen (mis. judul "KEPUTUSAN" tapi nomor pakai kode "PER", atau sebaliknya) — pilih satu dan konsisten dari awal sampai akhir.
+5. Jika jenis dokumen berupa Checklist/Formulir atau Bukti Pelaksanaan/Laporan Kegiatan, TIDAK PERLU boilerplate SK/Peraturan Direktur sama sekali — langsung buat sesuai struktur di "sistematika" masing-masing (kop RS + isi tabel/laporan), karena ini dokumen kerja/rekam implementasi, bukan regulasi.
+6. JANGAN mencampur dua judul/jenis dalam satu dokumen (mis. judul "KEPUTUSAN" tapi nomor pakai kode "PER", atau sebaliknya) — pilih satu dan konsisten dari awal sampai akhir.
 
-Pilih SATU jenis dokumen yang paling tepat untuk EP ini dari daftar sistematika (Program Kerja / Pedoman Pengorganisasian / Pedoman Pelayanan-Penyelenggaraan / Panduan / SPO / Kebijakan-SK Direktur). Tulis draft LENGKAP dan SUBSTANTIF (bukan kerangka kosong) — isi dengan konten yang masuk akal dan konkret untuk RSU Allam Medica, sesuai konteks EP yang diberikan. Tandai bagian yang wajib diisi manual oleh RS (nomor dokumen final, tanggal pasti) dengan format [ISI: keterangan]. Jangan gunakan markdown heading (#) — gunakan format naskah dinas biasa (BAB, huruf kapital, dsb). Balas HANYA dengan teks draft dokumennya saja, tanpa basa-basi pembuka/penutup.`;
+CARA MEMILIH JENIS DOKUMEN (perhatikan JENIS BUKTI dan bunyi Elemen Penilaian dengan teliti — jangan selalu memilih Peraturan Direktur/Panduan):
+- Jenis bukti "Regulasi" (R) DAN redaksi EP berbunyi "rumah sakit menetapkan/memiliki regulasi/kebijakan tentang..." → pilih Kebijakan/SK Direktur atau Peraturan Direktur (Pedoman/Panduan) sesuai cakupannya (satu topik sempit → SK; sistem/unit lengkap → Pedoman/Panduan via Peraturan Direktur).
+- Jenis bukti "Regulasi" TAPI redaksi EP tentang tata cara/langkah teknis suatu tindakan → pilih SPO, bukan Peraturan Direktur.
+- Jenis bukti "Dokumen" (D) dengan kata kunci seperti "checklist", "formulir", "daftar", "ceklis", "form", "instrumen penilaian" → WAJIB pilih Checklist/Formulir.
+- Jenis bukti "Dokumen" (D) dengan kata kunci "bukti pelaksanaan", "laporan", "notulen", "hasil rapat/evaluasi/monitoring", "dokumentasi kegiatan", "rekam" → WAJIB pilih Bukti Pelaksanaan/Laporan Kegiatan.
+- Jenis bukti "Wawancara" (W), "Observasi" (O), atau "Simulasi" (S) tanpa kombinasi dengan "Dokumen"/"Regulasi" → tetap pilih dokumen pendukung yang paling relevan (biasanya SPO yang jadi acuan praktik/wawancara/observasi tersebut, atau Checklist bila EP menyebut instrumen penilaian).
+- EP tentang identifikasi/daftar/pemetaan risiko unit atau RS secara umum (manajemen risiko, MFK, K3RS) → pilih Risk Register, gunakan skoring Probabilitas x Dampak dan format kolom sesuai "metodologiMutuRisiko.contohFormatRiskRegisterRS" di bawah — isi dengan risiko yang realistis untuk pokja/unit terkait, bukan tabel kosong.
+- EP tentang analisis risiko proaktif pada satu proses/prosedur berisiko tinggi (mis. sebelum menerapkan alur baru) → pilih FMEA, gunakan tabel Severity x Occurrence x Detectability = RPN sesuai "sistematika.FMEA".
+- EP tentang investigasi/analisis insiden keselamatan pasien, kejadian sentinel, KTD, atau akar masalah → pilih RCA, ikuti 8 langkah RCA di "sistematika.RCA" dan gunakan klasifikasi grading warna (Biru/Hijau/Kuning/Merah) dari "metodologiMutuRisiko.gradingRisikoInsiden".
+- Jangan default ke Peraturan Direktur atau Panduan hanya karena itu tampak "paling formal" — pilih jenis paling SPESIFIK dan LANGSUNG relevan dengan yang diminta EP. Variasikan jenis dokumen antar EP, jangan mengulang jenis yang sama terus-menerus jika konteksnya berbeda.
+
+Metodologi mutu & manajemen risiko RSU Allam Medica yang berlaku (JSON, pakai ini sebagai acuan isi bila jenis dokumen yang dipilih terkait risiko/mutu/insiden):
+${JSON.stringify(RS_PROFILE.metodologiMutuRisiko)}
+
+Tulis draft LENGKAP dan SUBSTANTIF (bukan kerangka kosong) — isi dengan konten yang masuk akal dan konkret untuk RSU Allam Medica, sesuai konteks EP yang diberikan. Tandai bagian yang wajib diisi manual oleh RS (nomor dokumen final, tanggal pasti) dengan format [ISI: keterangan]. Jangan gunakan markdown heading (#) — gunakan format naskah dinas/tabel biasa. Balas HANYA dengan teks draft dokumennya saja, tanpa basa-basi pembuka/penutup, tanpa menyebutkan jenis dokumen yang dipilih di luar isi dokumen itu sendiri.`;
 
   const prompt = `STANDAR: ${currentStandar}
 BUNYI STANDAR: ${stdTextFull}
