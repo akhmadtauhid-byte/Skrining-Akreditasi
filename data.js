@@ -112,3 +112,254 @@ dr. Hardyansyah, MPH-MMR
     prioritasRisikoRS: "Prioritas manajemen risiko RSU Allam Medica Bumiayu yang wajib diketahui seluruh staf: 'Risiko Downtime Operasional Rumah Sakit Akibat Pemadaman Listrik'."
   }
 };
+/* ============================================================
+   ADDENDUM RS_PROFILE — Literasi Tambahan untuk Akurasi AI
+   Sumber:
+   - Materi dr. Eka Viora, "Penguatan Kepatuhan Terhadap Regulasi
+     Kemenkes dalam Pelaksanaan Akreditasi RS" (KARS, 30 Juli 2026)
+   - drg. Yuli Astuti Saripawan, M.Kes, "Kebijakan Pelaporan Program
+     Prioritas Nasional dalam Standar Akreditasi RS" (Kemenkes, 28 Juli 2026)
+   - "Sosialisasi Pelaporan PPRA" (Kemenkes, 28 Juni 2026)
+   - SK Direktur RSU Allam Medica Bumiayu No. 1078/SK/D/AM/III/2026
+     tentang Penetapan Jenis Pelayanan yang Tersedia dan Belum Tersedia
+
+   CARA PAKAI: tempel (paste) seluruh isi file ini ke BAGIAN PALING
+   BAWAH file data.js yang sudah ada (setelah blok RS_PROFILE yang
+   lama). Karena RS_PROFILE sudah dideklarasikan dengan `const`
+   sebelumnya di data.js, baris-baris di bawah ini cukup menambahkan
+   properti baru ke objek yang sama (RS_PROFILE.pelayananRS = {...}),
+   TIDAK mendeklarasikan ulang RS_PROFILE, jadi aman ditempel di akhir
+   file tanpa menghapus apa pun yang sudah ada.
+   ============================================================ */
+
+// -------------------------------------------------------------
+// 1) PROFIL PELAYANAN RIIL RSU ALLAM MEDICA (dasar penentuan status
+//    "Tidak Dapat Dinilai / TDD" pada EP yang mensyaratkan pelayanan
+//    yang tidak tersedia di RS ini — sesuai SK Direktur No.
+//    1078/SK/D/AM/III/2026, ditetapkan 02 Maret 2026)
+// -------------------------------------------------------------
+RS_PROFILE.pelayananRS = {
+  sumberRegulasi: "SK Direktur RSU Allam Medica Bumiayu No. 1078/SK/D/AM/III/2026 tentang Penetapan Jenis Pelayanan yang Tersedia dan Belum Tersedia, ditetapkan di Bumiayu tanggal 02 Maret 2026 oleh dr. Hardyansyah, MPH-MMR",
+
+  tersedia: {
+    rawatJalan: [
+      "Poli Umum", "Poli Spesialis Kebidanan dan Kandungan", "Poli Spesialis Penyakit Dalam",
+      "Poli Spesialis Bedah Umum", "Poli Spesialis Anak", "Poli Spesialis Saraf",
+      "Poli Spesialis Jantung", "Poli Spesialis Kulit dan Kelamin", "Poli Estetika",
+      "Poli Spesialis THT", "Poli Spesialis Mata", "Poli Spesialis Radiologi", "Poli Gigi",
+      "Poli Khitan", "Poli Laktasi", "Poli KB", "Poli Gizi", "Poli TB DOT", "Poli VCT"
+    ],
+    rawatInap: ["VIP", "Kelas I", "Kelas II", "Kelas III", "Ruang Isolasi", "Ruang Perinatologi"],
+    lainnya: [
+      "Pelayanan Bersalin/Kamar VK", "Pelayanan Bedah Anestesi / Bedah Sentral",
+      "Pelayanan Intensif: ICU, ICCU, HCU, PICU, NICU", "Pelayanan Gawat Darurat",
+      "Instalasi Laboratorium 24 Jam", "Instalasi Radiologi 24 Jam", "Instalasi BDRS (Bank Darah)",
+      "USG 4D & 2D, X-Ray, EEG, EKG, Treadmill, Spirometri",
+      "Instalasi Gizi, Laundry, CSSD, Sanitasi & IPAL, Pemulasaraan Jenazah",
+      "Tumbuh Kembang Anak, Treatment Kecantikan, Pelayanan Antar Obat, Medical Check-up",
+      "Home Laboratorium, Home Care, Pelayanan Geriatri, Pelayanan Nyeri", "Unit Ambulance"
+    ]
+  },
+
+  // Layanan yang SECARA RESMI BELUM TERSEDIA di RSU Allam Medica — EP yang
+  // mensyaratkan layanan ini WAJIB ditandai "Tidak Dapat Dinilai (TDD)",
+  // BUKAN "Tidak Terpenuhi (skor 0)", dan tidak perlu dibuatkan draft pemenuhan.
+  belumTersedia: [
+    "Hemodialisa", "Hiperbarik", "MRI", "MSCT", "Kateterisasi Jantung", "Kateterisasi Otak",
+    "Forensik", "Radiotherapi", "Kemoterapi", "Stroke Center", "Thalasemia Center",
+    "Pusat Jantung Terpadu", "Pelayanan Jiwa", "Rehabilitasi Medik (Rehab Medik)",
+    "Pengelolaan Bahan Radioaktif", "Penyelenggaraan Obat Penelitian",
+    "Pendidikan dan Pelatihan Tenaga Kesehatan (bukan RS Pendidikan/Wahana Pendidikan)"
+  ],
+
+  // Daftar EP yang secara eksplisit sudah dipetakan TIDAK DAPAT DINILAI (TDD)
+  // oleh manajemen RSU Allam Medica beserta ALASAN RESMI-nya (gunakan kalimat
+  // alasan ini apa adanya dalam kajian bila EP berikut dinilai/dibuat draftnya).
+  epTidakDapatDinilai: [
+    { standar: "TKRS 15", ep: ["A","B","C","D","E","F","G"],
+      alasan: "RSU Allam Medica Bumiayu merupakan RS yang belum menyediakan pendidikan dan penelitian. Tidak memiliki komite etik penelitian, sehingga tidak ada program penelitian bersubjek manusia dan juga tidak membuat kerjasama dengan perguruan tinggi manapun untuk melaksanakan pendidikan tenaga kesehatan, tenaga medis, spesialis dan atau subspesialis." },
+    { standar: "PAP 2.3", ep: ["A","B","C"],
+      alasan: "RSU Allam Medica Bumiayu belum menyediakan pelayanan jiwa." },
+    { standar: "PAP 2.4", ep: ["A","B","C","D","E","F"],
+      alasan: "RSU Allam Medica Bumiayu tidak menindaklanjuti risiko bunuh diri, karena tidak ada dokter spesialis jiwa." },
+    { standar: "PROGNAS TB 2.2", ep: ["C"],
+      alasan: "Belum ada penetapan dari Dinas Kesehatan/Kementerian Kesehatan sebagai fasilitas layanan TB RO dan rumah sakit tidak melaksanakan pelayanan TB MDR." },
+    { standar: "HPK 4", ep: ["C"],
+      alasan: "RSU Allam Medica Bumiayu merupakan RS yang belum menyediakan pendidikan dan penelitian." },
+    { standar: "KPS 7", ep: ["D"],
+      alasan: "RSU Allam Medica Bumiayu merupakan RS yang belum menyediakan pendidikan dan penelitian (tidak ada mahasiswa/trainee)." },
+    { standar: "MRMIK 1", ep: ["E"],
+      alasan: "RSU Allam Medica Bumiayu merupakan RS yang belum menyediakan pendidikan dan penelitian." },
+    { standar: "PPI 4", ep: ["E"],
+      alasan: "Pelayanan sterilisasi di RSU Allam Medica Bumiayu dilaksanakan terpusat (CSSD internal) dan tidak bekerjasama dengan pihak ketiga." },
+    { standar: "PPI 4.1", ep: ["A","B","C"],
+      alasan: "Rumah sakit tidak melakukan reuse (penggunaan ulang) peralatan medis dan/atau BMHP." },
+    { standar: "AKP 6", ep: ["C"],
+      alasan: "Rumah sakit tidak bekerjasama dengan jasa transportasi pasien mandiri." },
+    { standar: "PKPO 3.1", ep: ["B"],
+      alasan: "Rumah sakit belum menyediakan layanan dengan bahan radioaktif." },
+    { standar: "PKPO 3.1", ep: ["C"],
+      alasan: "Rumah sakit belum menyelenggarakan obat penelitian." },
+    { standar: "PKPO 5", ep: ["D"],
+      alasan: "Rumah sakit belum menyediakan layanan kemoterapi." }
+  ],
+
+  instruksiAI: "Sebelum menilai atau membuat draft untuk suatu Elemen Penilaian, AI WAJIB memeriksa apakah kombinasi standar+EP tersebut terdaftar di RS_PROFILE.pelayananRS.epTidakDapatDinilai atau berkaitan dengan layanan pada RS_PROFILE.pelayananRS.belumTersedia. Jika ya: (1) beri status 'Tidak Dapat Dinilai (TDD)', BUKAN skor 0/Tidak Terpenuhi; (2) gunakan kalimat alasan resmi dari SK Direktur No.1078/SK/D/AM/III/2026 sebagai dasar kajian, jangan mengarang alasan lain; (3) JANGAN membuat draft dokumen pemenuhan untuk EP berstatus TDD — cukup catat status dan alasannya, karena TDD tidak memerlukan pemenuhan dokumen. Ingatkan bahwa TDD berbeda dari 'Tidak Terpenuhi': TDD dikecualikan dari perhitungan skor bab sesuai kriteria kelulusan akreditasi (kecuali Bab Program Nasional yang wajib 100% dari EP yang applicable)."
+};
+
+// -------------------------------------------------------------
+// 2) LITERASI KEBIJAKAN PROGRAM NASIONAL & PPRA (untuk akurasi
+//    kajian/rekomendasi pada Bab Program Nasional dan EP terkait AMR)
+// -------------------------------------------------------------
+RS_PROFILE.literasiProgramNasional = {
+  dasarHukum: [
+    "UU No. 17 Tahun 2023 tentang Kesehatan, Pasal 178 — peningkatan mutu pelayanan kesehatan RS wajib dilakukan secara internal (manajemen risiko, indikator mutu, IKP) dan eksternal (lisensi, registrasi, akreditasi) secara terus-menerus.",
+    "KMK No. HK.01.07/MENKES/1596/2024 tentang Standar Akreditasi Rumah Sakit.",
+    "Kepdirjen Yankes No. HK.02.02/D/47104/2024 tentang Instrumen Survei Akreditasi Rumah Sakit.",
+    "Kepdirjen Yankes No. HK.02.02/I/43961/2024 tentang Pedoman Survei Akreditasi Rumah Sakit.",
+    "Surat Edaran No. HK.02.02/I/47/2023 tentang Pelaksanaan Survei Akreditasi RS dalam rangka mendukung Program Nasional.",
+    "Permenkes No. 8 Tahun 2015 tentang Program Pengendalian Resistensi Antimikroba (PPRA) di RS.",
+    "Permenkes No. 27 Tahun 2017 tentang Pedoman PPI di Fasilitas Pelayanan Kesehatan.",
+    "Permenkes No. 12 Tahun 2020 tentang Akreditasi Rumah Sakit (Pasal 19 — sanksi ketidakpatuhan pelaporan mutu/PPRA dapat berupa rekomendasi penyesuaian status akreditasi atau survei ulang)."
+  ],
+
+  strukturBabAkreditasi: {
+    catatan: "Total instrumen: 16 Bab, 228 Standar, 805 EP (sesuai KMK 1596/2024; jumlah EP final di database internal RS = 794 setelah rekonsiliasi Kepdirjen 47104/2024).",
+    kelompokManajemenRS: ["TKRS", "PMKP", "KPS", "MFK", "PPI", "PPK", "MRMIK"],
+    kelompokPelayananPasien: ["AKP", "PP", "PAP", "PAB", "PKPO", "HPK", "KE"],
+    sasaranKeselamatanPasien: ["SKP 1 Identifikasi Pasien", "SKP 2 Komunikasi Efektif", "SKP 3 Keamanan Obat yang Diwaspadai", "SKP 4 Keamanan Tindakan Bedah", "SKP 5 Mengurangi Risiko Infeksi", "SKP 6 Mengurangi Risiko Cedera Akibat Pasien Jatuh"],
+    programNasional: [
+      "a. Pelayanan Kesehatan Ibu dan Anak (KIA) — aplikasi MPDN (Prognas 1)",
+      "b. Pelayanan TB Paru — aplikasi SITB (Prognas 2)",
+      "c. Pelayanan HIV/AIDS — aplikasi SIHA (Prognas 3)",
+      "d. Program Gizi — aplikasi SIGIZI (Prognas 4)",
+      "e. Program KB Rumah Sakit — aplikasi SIGA (Prognas 5)",
+      "f. Program Pengendalian Resistensi Antimikroba (PPRA) — aplikasi PPRA (Prognas 6)"
+    ]
+  },
+
+  kriteriaKelulusanAkreditasi: {
+    paripurna: "15 dari 16 bab (di luar Bab Program Nasional) mendapat nilai minimal 80% DAN Bab Program Nasional WAJIB 100%, dengan syarat awal terpenuhi termasuk kepatuhan pelaporan mutu, serta diverifikasi sebelum penandatanganan oleh Dirjen Pelayanan Kesehatan.",
+    utama: "11–14 bab nilai minimal 80% (RS pendidikan) atau 11–13 bab (RS non-pendidikan), Bab SKP minimal 80%, DAN Bab Program Nasional WAJIB 100%.",
+    madya: "7–10 bab nilai minimal 80%, Bab SKP minimal 70%, DAN Bab Program Nasional WAJIB 100%.",
+    tidakTerakreditasi: "Terjadi bila: kurang dari 7 bab mencapai nilai minimal 80%; ATAU Bab SKP < 70%; ATAU Bab Program Nasional < 100% (berlaku mutlak — walau bab lain sudah baik, RS otomatis tidak lulus/turun status bila Bab Program Nasional belum 100%).",
+    pengecualian: "Kewajiban pencapaian nilai 100% pada Bab Program Nasional dikecualikan untuk RS Kelas D dan RS khusus yang tidak dapat melakukan pelayanan terkait program nasional tersebut, dibuktikan dengan surat pernyataan pimpinan RS (RSU Allam Medica adalah RS Tipe C sehingga TIDAK termasuk pengecualian ini — Bab Program Nasional tetap wajib 100%)."
+  },
+
+  persiapanWajibProgramNasional: [
+    "Rumah sakit sudah melaksanakan pelaporan: (1) Angka Kematian Ibu/AKI, Angka Kematian Bayi/AKB, dan Skrining Hipotiroid Kongenital/SHK; (2) Tuberkulosis (SITB); (3) Stunting; (4) HIV/AIDS (SIHA); (5) Pelayanan KB Rumah Sakit/PKBRS (SIGA).",
+    "Pengukuran dan pelaporan Indikator Nasional Mutu (INM) — bulanan.",
+    "Pelaporan Insiden Keselamatan Pasien (IKP) — setiap kejadian.",
+    "Pelaporan Healthcare-Associated Infections (HAIs) — bulanan, paling lambat tanggal 10 bulan berikutnya.",
+    "Pelaporan PPRA/AMR — periodik (per triwulan), mencakup Penatagunaan Antimikroba (PGA), surveilans AMR, dan edukasi/pelatihan — BUKAN sekadar tabel kertas kerja atau laporan copy-paste antar-triwulan.",
+    "Catatan verifikasi Kemenkes: RS pernah dinyatakan 'belum memenuhi syarat status Paripurna' karena laporan PPRA per triwulan isinya sama (copy-paste) atau tidak mencakup implementasi PGA (pra-otorisasi, edukasi, pelatihan) — RSU Allam Medica harus memastikan laporan PPRA per triwulan BERBEDA dan mencerminkan kegiatan riil setiap periode.",
+    "Update RS Online dan SISDMK, penyelenggaraan Rekam Medis Elektronik (RME) terkoneksi SATUSEHAT, ASPAK minimal 60%."
+  ],
+
+  daftarPelaporanWajibKeKemenkes: [
+    { no: 1, jenis: "SIRS/RS Online", wajibUntuk: "Semua RS", frekuensi: "Bulanan/tahunan/update sesuai data" },
+    { no: 2, jenis: "Registrasi RS (RS Online/Regfasyankes)", wajibUntuk: "Semua RS", frekuensi: "Saat registrasi & tiap ada perubahan" },
+    { no: 3, jenis: "ASPAK", wajibUntuk: "Semua RS", frekuensi: "Update berkala/tiap ada perubahan" },
+    { no: 4, jenis: "RME-SATUSEHAT", wajibUntuk: "Semua fasyankes", frekuensi: "Real-time/terintegrasi bertahap" },
+    { no: 5, jenis: "INM (Indikator Nasional Mutu)", wajibUntuk: "Semua RS", frekuensi: "Bulanan" },
+    { no: 6, jenis: "HAIs", wajibUntuk: "RS dengan layanan terkait", frekuensi: "Bulanan, paling lambat tgl 10 bulan berikutnya" },
+    { no: 7, jenis: "IKP", wajibUntuk: "Semua RS", frekuensi: "Setiap kejadian" },
+    { no: 8, jenis: "TBC (SITB)", wajibUntuk: "RS yang menemukan/mendiagnosis/merawat/mengobati pasien TB", frekuensi: "Real-time/periodik (wajib zero-reporting bila tidak ada kasus)" },
+    { no: 9, jenis: "HIV/AIDS (SIHA)", wajibUntuk: "RS dengan layanan HIV/tes/PDP/ARV/PPIA/IMS", frekuensi: "Periodik sesuai program" },
+    { no: 10, jenis: "SKDR/KLB", wajibUntuk: "Semua RS bila menemukan kasus", frekuensi: "Mingguan atau segera 1x24 jam untuk kasus tertentu" },
+    { no: 11, jenis: "Program Nasional lain (MPDN/SIGIZI/SIGA)", wajibUntuk: "RS sesuai layanan yang diselenggarakan", frekuensi: "Sesuai program" },
+    { no: 12, jenis: "PPRA/AMR", wajibUntuk: "RS sesuai ketentuan dan layanan", frekuensi: "Periodik (per triwulan)" },
+    { no: 13, jenis: "Akreditasi/PPS (Program Perbaikan Strategis)", wajibUntuk: "RS yang disurvei akreditasi", frekuensi: "Pasca-survei, PPS wajib dikirim 45 hari kerja setelah rekomendasi diterima" },
+    { no: 14, jenis: "Layanan khusus (ICU/hemodialisis/bedah/maternal/neonatal/lab/radiologi/transfusi darah, dll)", wajibUntuk: "RS yang memiliki layanan khusus tsb", frekuensi: "Sesuai layanan/program" }
+  ],
+
+  persyaratanAwalPersiapanAkreditasi: [
+    "Struktur Organisasi Rumah Sakit", "Daftar nama lengkap direksi", "Denah rumah sakit",
+    "Daftar nama seluruh staf RS beserta jabatan",
+    "Daftar perizinan fasilitas RS yang masih berlaku (Perizinan Berusaha, Izin IPAL, Izin/kerjasama pengelolaan limbah B3, dll)",
+    "Daftar nama unit dan indikator mutu prioritas unit dan RS", "Daftar jadwal praktik dokter rawat jalan dan jadwal on-call",
+    "Program Peningkatan Mutu dan Keselamatan Pasien beserta laporan hasil kegiatan (laporan triwulan untuk survei awal; laporan bulanan sejak survei akreditasi terakhir untuk re-akreditasi)",
+    "ASPAK minimal 60%, divalidasi oleh Kemenkes/Dinkes", "Update RS-Online dan SISDMK",
+    "Penyelenggaraan Rekam Medis Elektronik (RME) terkoneksi SIKN/SATUSEHAT",
+    "Pelaporan Program Nasional lengkap dengan bukti dukung screenshot dashboard pelaporan per bulan",
+    "Surat pemberitahuan kepada Dinas Kesehatan setempat bahwa RS akan melaksanakan survei akreditasi",
+    "Tambahan terbaru: hasil Google Review, Laporan Pengaduan, dan Laporan Bullying juga menjadi bagian verifikasi awal LPA/Kemenkes."
+  ],
+
+  ppra: {
+    tujuanStrategis: [
+      "Mengendalikan berkembangnya mikroba resisten akibat tekanan seleksi oleh antibiotik, melalui penggunaan antibiotik secara bijak (Penatagunaan Antimikroba/PGA).",
+      "Mencegah penyebaran mikroba resisten melalui peningkatan ketaatan terhadap prinsip Pencegahan dan Pengendalian Infeksi (PPI)."
+    ],
+    dasarStandarAkreditasi: "Standar Prognas 6: 'Rumah sakit menyelenggarakan program pengendalian resistensi antimikroba (PPRA) sesuai peraturan perundang-undangan.' Standar Prognas 6.1: 'Rumah sakit mengembangkan dan menerapkan penggunaan antimikroba secara bijak berdasarkan prinsip Penatagunaan Antimikroba (PGA).'",
+    strukturOrganisasi: {
+      hierarki: "Direktur RS → Ketua KPRA (Komite/Tim PPRA, dijabat klinisi yang berminat di bidang infeksi) + Sekretaris → 3 bidang: (1) Bidang PGA yang membawahi Tim PGA, (2) Bidang Surveilans dan Penelitian, (3) Bidang Pendidikan dan Pelatihan.",
+      anggota: ["Klinisi perwakilan KSM (Kelompok Staf Medis)", "Keperawatan", "Instalasi Farmasi", "Laboratorium Mikrobiologi Klinis", "Komite/Tim PPI", "Komite/Tim Farmasi dan Terapi"]
+    },
+    tahapanImplementasiPGA: {
+      persiapan: ["Mengukur baseline AMU (Antimicrobial Use) dan AMR (Antimicrobial Resistance)", "Memilih unit pilot project", "Menetapkan tujuan, proses, dan hasil yang diharapkan", "Menetapkan kriteria Restricted Program (RP) dan Unrestricted (UB)", "Menetapkan kriteria keberhasilan"],
+      pelaksanaan: ["Pembatasan penggunaan antimikroba kelompok AWaRe (Access/Watch/Reserve) di RS → PPAB", "Automatic Stop Order", "Pra-otorisasi (khususnya golongan Watch dan Reserve)", "Review Prospektif dan umpan balik", "De-eskalasi terapi", "Forum Kajian Kasus Infeksi Terintegrasi (FORKIT)"],
+      evaluasi: ["Audit kuantitatif dan kualitatif oleh KPRA", "Memantau pengadaan dan biaya antimikroba"]
+    },
+    alurPraOtorisasiAWaRe: "Pasien → DPJP menulis resep antimikroba → Farmasis Klinik meninjau kelas AWaRe: (1) Access — langsung diteruskan ke Unit Farmasi lalu ke Perawat/Pasien; (2) Watch — dikonsultasikan ke Konsultan Infeksi untuk persetujuan; (3) Reserve — wajib melalui persetujuan KPRA. Jika disetujui → diteruskan ke farmasi/perawat/pasien; jika tidak disetujui → kembali ke DPJP untuk peninjauan ulang resep.",
+    auditKualitasMetodeGyssens: "Audit kualitas menggunakan metode Gyssens/PPS (Point Prevalence Survey) untuk menilai ketepatan jenis antimikroba, dosis, rute, saat, dan lama pemberian. Kategori 0 (Gyssens) = penggunaan rasional; Kategori V = penggunaan tanpa indikasi. Jika penggunaan tidak tepat, KPRA memberikan umpan balik hasil reviu kepada KSM (Kelompok Staf Medis) terkait dalam forum diskusi bersama, didokumentasikan sebagai bukti kegiatan.",
+    auditKuantitas: "Dihitung dalam satuan DDD (Defined Daily Dose)/100 hari-rawat. KPRA WAJIB melaporkan hasil audit kuantitatif dan kualitatif setiap 3–6 bulan kepada pimpinan rumah sakit — laporan ini menjadi bukti dokumen (D) untuk EP terkait PPRA, bukan sekadar tabel rekap tanpa analisis.",
+    indikatorWajibPPRA: [
+      "1. Perbaikan kuantitas penggunaan antibiotik — menurunnya konsumsi antibiotik (jumlah & jenis) sebagai terapi empiris maupun definitif.",
+      "2. Perbaikan kualitas penggunaan antibiotik — meningkatnya penggunaan antibiotik rasional (kategori 0 Gyssens) dan menurunnya penggunaan tanpa indikasi (kategori V Gyssens).",
+      "3. Perbaikan pola sensitivitas antibiotik dan penurunan mikroba multiresisten — tergambar dalam peta kepekaan antibiotik (antibiogram) yang diperbarui setiap tahun.",
+      "4. Penurunan angka kejadian infeksi di RS akibat mikroba multiresisten (contoh: MRSA, ESBL).",
+      "5. Peningkatan mutu penanganan kasus infeksi secara multidisiplin melalui Forum Kajian Kasus Infeksi Terintegrasi (FORKIT).",
+      "6. Kepatuhan pemberian Antibiotik (AB) Empirik Sistemik sesuai Standar (Indikator Nasional Mutu — IKT). Target nasional RS Pemerintah: 10% (2025) → 15% (2026) → 30% (2027) → 45% (2028) → 60% (2029)."
+    ],
+    indikatorKepatuhanABEmpirikSistemik: {
+      dimensiMutu: "Keselamatan, efektif, efisien",
+      tujuan: "Meningkatkan kepatuhan penggunaan antibiotik yang rasional melalui pemberian antibiotik empirik sistemik sesuai standar",
+      definisiOperasional: "Pemberian antibiotik empirik sistemik sesuai standar adalah pemberian antibiotik sesuai PPK (Panduan Praktik Klinis) atau PPAB (Panduan Penggunaan Antibiotik) berdasarkan dugaan bakteri patogen penyebab infeksi dan pertimbangan antibiogram lokal — meliputi kesesuaian jenis, dosis, interval/frekuensi, dan rute pemberian.",
+      target: "≥ 80%",
+      kriteriaInklusi: "Pasien dewasa dan anak di ruang rawat inap (intensif maupun non-intensif) dengan kasus sepsis, pneumonia, dan infeksi saluran kemih yang mendapat antibiotik empirik sistemik.",
+      kriteriaEksklusi: "Antibiotik empirik oral; antibiotik sistemik yang sudah terkonfirmasi kultur & sensitivitas di awal terapi (pasien rujukan); ada dokumentasi justifikasi klinis (riwayat alergi/kegagalan terapi sebelumnya).",
+      formula: "(Jumlah pasien yang mendapat antibiotik empirik sistemik sesuai standar / Jumlah pasien yang direview kesesuaian terapi antibiotik empirik sistemik pada periode pengukuran) x 100%",
+      metodePengumpulan: "Retrospektif dari Rekam Medis Pasien, periode pengumpulan triwulanan, penanggung jawab: Direktur Pelayanan Medik."
+    },
+    dokumenWajibDimilikiRS: [
+      "PPAB — Panduan Penggunaan Antibiotik RS (regulasi internal RS, memuat daftar antibiotik AWaRe, alur pra-otorisasi, kriteria restricted/unrestricted).",
+      "PPK — Panduan Praktik Klinis per kasus infeksi (minimal untuk kasus prioritas: ISK, sepsis, pneumonia — memuat definisi, etiologi, tata laksana termasuk pilihan antibiotik empirik sesuai pola kuman lokal).",
+      "Laporan audit kuantitatif (DDD/100 hari-rawat) dan kualitatif (Gyssens/PPS) berkala tiap 3-6 bulan kepada pimpinan RS — WAJIB berbeda isi setiap periode, bukan copy-paste."
+    ],
+    kewajibanPelaporanEksternal: "Kepala/Direktur RS wajib melaporkan pelaksanaan PPRA di RS kepada Menteri melalui KPRA (Komite/Tim Pengendalian Resistensi Antimikroba tingkat nasional) dengan tembusan Dinas Kesehatan Provinsi dan Kabupaten/Kota, dilakukan secara berkala setiap akhir tahun (Permenkes No. 8/2015 Pasal 12). Kelalaian pelaporan dapat berdampak pada rekomendasi penyesuaian status akreditasi atau survei ulang oleh Dirjen (Permenkes No. 12/2020 Pasal 19)."
+  },
+
+  checklistDokumenPendukungSIKARS: {
+    catatan: "24 item checklist dokumen wajib yang disampaikan bersama laporan survei akreditasi melalui aplikasi SIKARS, sesuai aturan Kemenkes terbaru.",
+    umum: [
+      "PB (Perizinan Berusaha) yang masih berlaku dan teregistrasi", "IPLC/dokumen pengelolaan limbah cair yang masih berlaku",
+      "Kerjasama pihak ketiga berizin untuk limbah B3", "Pemenuhan ASPAK minimal 60%",
+      "Struktur organisasi RS (pimpinan tertinggi dijabat nakes/tenaga profesional kompeten manajemen RS)",
+      "Daftar nama lengkap direksi", "Denah rumah sakit", "Daftar nama seluruh staf RS beserta jabatan",
+      "Daftar perizinan fasilitas yang masih berlaku", "Daftar nama unit dan indikator mutu prioritas unit",
+      "Daftar jadwal praktik dokter rawat jalan dan jadwal on-call",
+      "Program PMKP dan laporan (min. 3 bulan terakhir survei awal / bulanan sejak survei terakhir untuk re-akreditasi)"
+    ],
+    laporanProgramNasionalWajibScreenshotDashboard: [
+      "Laporan pelaksanaan Program Nasional INM", "Laporan pelaksanaan Program Nasional IKP",
+      "Laporan pelaksanaan Program Nasional HAIs", "Laporan pelaksanaan Program Nasional PPRA",
+      "Laporan pelaksanaan Program Nasional SITB", "Laporan pelaksanaan Program Nasional SIHA",
+      "Laporan pelaksanaan Program Nasional MPDN", "Laporan pelaksanaan Program Nasional SIGIZI",
+      "Laporan pelaksanaan Program Nasional KBRS (1 tahun terakhir, screenshot per bulan, bukan hanya dashboard)"
+    ],
+    lainnya: [
+      "Bukti pemutakhiran data RS pada RS Online dan SISDMK",
+      "Bukti pelaksanaan RME yang terkoneksi dengan SIKN/SATUSEHAT",
+      "Surat pemberitahuan kepada Dinas Kesehatan setempat bahwa RS akan melaksanakan survei akreditasi"
+    ]
+  },
+
+  contohTemuanKetidakpatuhanPelaporan: [
+    "Laporan IKP/HAIs tidak lapor pada bulan tertentu (menyebabkan status Paripurna ditolak, disarankan turun ke status Utama).",
+    "Laporan PPRA per triwulan copy-paste / isinya sama setiap periode, atau tidak mencakup implementasi PGA riil (pra-otorisasi, edukasi, pelatihan) — hanya berupa tabel kertas kerja tanpa SK dan program kerja.",
+    "Laporan SITB/SIHA tidak lengkap — bila tidak ada kasus/terduga, RS tetap WAJIB melaporkan 'zero reporting', bukan tidak lapor sama sekali.",
+    "Laporan SIHA belum pernah dilaporkan sama sekali.",
+    "Upaya perbaikan yang disarankan bila dinilai tidak patuh: (1) konfirmasi resmi ke Dinkes Kab/Kota atau Provinsi apakah aplikasi masih membuka periode pelaporan mundur (backdate); (2) bila tidak bisa backdate, minta jawaban tertulis resmi bahwa pelaporan dimulai sejak sosialisasi; (3) tetap kumpulkan data periode yang terlewat secara internal sebagai bukti pemantauan; (4) buat notulen yang menjelaskan tanggal diterimanya informasi dari Dinkes, tanggal mulai implementasi pelaporan, dan kendala pelaporan periode sebelumnya."
+  ]
+};
