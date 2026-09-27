@@ -239,6 +239,19 @@ function showError(msg) { errorBox.textContent = msg; errorBox.classList.remove(
 function hideError() { errorBox.classList.add("hidden"); }
 function clearResults() { results = null; resultsSection.classList.add("hidden"); epResultsEl.innerHTML = ""; }
 
+// ---- Cek apakah suatu EP termasuk daftar "Tidak Dapat Dinilai (TDD)" berdasarkan
+// SK Direktur No.1078/SK/D/AM/III/2026 (RS_PROFILE.pelayananRS.epTidakDapatDinilai) ----
+function findTddInfo(standarCode, epLetter) {
+  const list = (RS_PROFILE.pelayananRS && RS_PROFILE.pelayananRS.epTidakDapatDinilai) || [];
+  const std = (standarCode || "").trim().toUpperCase();
+  const letter = (epLetter || "").trim().toUpperCase();
+  return list.find(item => {
+    const itemStd = (item.standar || "").trim().toUpperCase();
+    if (itemStd !== std) return false;
+    return (item.ep || []).map(x => x.toUpperCase()).includes(letter);
+  });
+}
+
 // ---- Call backend (proxy to Anthropic API), dengan retry otomatis ----
 async function callBackend(system, prompt, images = [], retries = 2) {
   if (!API_ENDPOINT || API_ENDPOINT.indexOf("GANTI_DENGAN") === 0) {
@@ -308,6 +321,14 @@ async function runAnalysis() {
 Jika EP yang dinilai berkaitan dengan manajemen risiko, mutu, insiden keselamatan pasien, MFK, PPI, atau K3RS, gunakan pemahaman metodologi berikut saat menilai kelengkapan bukti (mis. apakah dokumen sudah mencantumkan skoring probabilitas x dampak, grading, RCA 8 langkah, FMEA dengan RPN, dsb — bukan hanya menilai keberadaan dokumennya saja):
 ${JSON.stringify(RS_PROFILE.metodologiMutuRisiko)}
 
+Profil pelayanan riil RSU Allam Medica (dasar penentuan status "Tidak Dapat Dinilai/TDD" untuk EP yang mensyaratkan layanan yang tidak tersedia di RS ini, sesuai SK Direktur No.1078/SK/D/AM/III/2026):
+${JSON.stringify(RS_PROFILE.pelayananRS)}
+
+Literasi kebijakan Program Nasional & PPRA (rujukan kajian bila EP berkaitan dengan Bab Program Nasional: KIA/TB/HIV/Gizi/KB/PPRA):
+${JSON.stringify(RS_PROFILE.literasiProgramNasional)}
+
+PENTING — SEBELUM menilai suatu EP: periksa apakah kombinasi standar+huruf EP ini ada dalam daftar RS_PROFILE.pelayananRS.epTidakDapatDinilai, ATAU EP ini secara jelas mensyaratkan layanan yang ada di RS_PROFILE.pelayananRS.belumTersedia (misalnya menyebut MRI, hemodialisa, kemoterapi, radioterapi, pelayanan jiwa, dst). Jika ya: berikan status "TDD" (Tidak Dapat Dinilai), BUKAN "Tidak Ada"/skor 0, dan pada bagian "kajian" gunakan alasan resmi dari SK Direktur No.1078/SK/D/AM/III/2026 (jika EP tersebut terdaftar eksplisit) apa adanya, atau jelaskan singkat bahwa layanan terkait belum tersedia di RSU Allam Medica (jika tidak terdaftar eksplisit tapi jelas berkaitan dengan layanan yang belum ada). Kosongkan "rekomendasi" untuk status TDD karena tidak memerlukan pemenuhan dokumen.
+
 Anda HANYA merespons dengan JSON valid, tanpa teks lain, tanpa markdown code fence.`;
 
   const entry = getStandarListForPokja(currentPokja).find(([c]) => c === currentStandar);
@@ -323,6 +344,24 @@ Anda HANYA merespons dengan JSON valid, tanpa teks lain, tanpa markdown code fen
     const ep = currentEpList[i];
     runLabel.textContent = `Menganalisis... (${i}/${total})`;
     const maxSkor = skorMax(ep.skor);
+
+    // Cek dulu secara lokal (tanpa panggil AI) apakah EP ini sudah eksplisit terdaftar TDD di SK Direktur.
+    const tddInfo = findTddInfo(currentStandar, ep.epHuruf || ep.huruf || "");
+
+    let entryResult;
+    if (tddInfo) {
+      entryResult = {
+        ep, status: "TDD", skor: null,
+        kajian: tddInfo.alasan,
+        rekomendasi: "",
+      };
+      results.push(entryResult);
+      appendResultCard(entryResult, i);
+      renderSummary();
+      runLabel.textContent = `Menganalisis... (${i + 1}/${total})`;
+      continue;
+    }
+
     const prompt = `STANDAR: ${currentStandar}
 BUNYI STANDAR: ${stdTextFull}
 
@@ -339,12 +378,11 @@ ${docText.slice(0, 60000) || "(tidak ada teks yang ditempel — dokumen dilampir
 """
 ${images.length ? `\n${images.length} lembar dokumen juga dilampirkan sebagai gambar/foto — baca dan gunakan isinya sebagai bukti tambahan.` : ""}
 
-Tugas Anda: nilai apakah dokumen di atas memenuhi elemen penilaian ini. Berikan penilaian objektif berdasarkan isi dokumen yang benar-benar ada, jangan mengasumsikan sesuatu yang tidak disebutkan.
+Tugas Anda: nilai apakah dokumen di atas memenuhi elemen penilaian ini. Berikan penilaian objektif berdasarkan isi dokumen yang benar-benar ada, jangan mengasumsikan sesuatu yang tidak disebutkan. Ingat: jika EP ini termasuk kategori TDD (lihat instruksi di system prompt), balas dengan status "TDD" bukan skor angka.
 
 Balas HANYA dengan JSON berikut (tanpa markdown fence, tanpa teks tambahan):
-{"status":"Terpenuhi|Sebagian|Tidak Ada","skor":${maxSkor === 10 ? '"10 atau 5 atau 0"' : '"angka sesuai skala"'},"kajian":"analisa singkat 1-2 kalimat tentang apa yang ditemukan/tidak ditemukan dalam dokumen","rekomendasi":"1 kalimat saran konkret untuk melengkapi jika belum terpenuhi, atau kosongkan jika sudah Terpenuhi penuh"}`;
+{"status":"Terpenuhi|Sebagian|Tidak Ada|TDD","skor":${maxSkor === 10 ? '"10 atau 5 atau 0 (atau null jika TDD)"' : '"angka sesuai skala (atau null jika TDD)"'},"kajian":"analisa singkat 1-2 kalimat tentang apa yang ditemukan/tidak ditemukan dalam dokumen (atau alasan TDD)","rekomendasi":"1 kalimat saran konkret untuk melengkapi jika belum terpenuhi, kosongkan jika sudah Terpenuhi penuh atau berstatus TDD"}`;
 
-    let entryResult;
     try {
       const parsed = await callBackend(system, prompt, images);
       entryResult = { ep, ...parsed };
@@ -365,20 +403,25 @@ Balas HANYA dengan JSON berikut (tanpa markdown fence, tanpa teks tambahan):
 function statusMeta(status) {
   if (status === "Terpenuhi") return { cls: "ok", icon: "✓", label: "Terpenuhi" };
   if (status === "Sebagian") return { cls: "warn", icon: "⚠", label: "Sebagian" };
+  if (status === "TDD") return { cls: "tdd", icon: "⊘", label: "Tidak Dapat Dinilai (TDD)" };
   return { cls: "bad", icon: "✕", label: "Tidak Ada" };
 }
 
 function renderSummary() {
-  let total = 0, max = 0;
-  const counts = { Terpenuhi: 0, Sebagian: 0, "Tidak Ada": 0 };
+  let total = 0, max = 0, tddCount = 0;
+  const counts = { Terpenuhi: 0, Sebagian: 0, "Tidak Ada": 0, TDD: 0 };
   results.forEach(r => {
+    if (r.status === "TDD") { tddCount++; counts.TDD++; return; } // TDD dikecualikan dari perhitungan skor
     max += skorMax(r.ep.skor);
     const s = typeof r.skor === "number" ? r.skor : parseInt(r.skor) || 0;
     total += s;
     counts[r.status] = (counts[r.status] || 0) + 1;
   });
-  // total skor maksimal ditampilkan berdasarkan seluruh EP standar (bukan cuma yang sudah dinilai)
-  const fullMax = currentEpList.reduce((sum, ep) => sum + skorMax(ep.skor), 0);
+  // total skor maksimal ditampilkan berdasarkan seluruh EP standar YANG BUKAN TDD (bukan cuma yang sudah dinilai)
+  const tddEpSet = new Set(results.filter(r => r.status === "TDD").map(r => r.ep));
+  const fullMax = currentEpList
+    .filter(ep => !tddEpSet.has(ep))
+    .reduce((sum, ep) => sum + skorMax(ep.skor), 0);
   const pct = fullMax ? Math.round((total / fullMax) * 100) : 0;
 
   document.getElementById("statSkor").textContent = `${total}/${fullMax}`;
@@ -387,27 +430,34 @@ function renderSummary() {
   statPct.style.color = pct >= 80 ? "var(--ok-fg)" : pct >= 50 ? "var(--warn-fg)" : "var(--bad-fg)";
   document.getElementById("statOk").textContent = counts["Terpenuhi"] || 0;
   document.getElementById("statBad").textContent = (counts["Sebagian"] || 0) + (counts["Tidak Ada"] || 0);
+  const statTdd = document.getElementById("statTdd");
+  if (statTdd) statTdd.textContent = tddCount;
 }
 
 function appendResultCard(r, idx) {
   const meta = statusMeta(r.status);
   const card = document.createElement("div");
   card.className = "ep-card";
+  const isTdd = r.status === "TDD";
   card.innerHTML = `
     <div class="ep-head">
       <p class="ep-text">${escapeHtml(r.ep.ep)}</p>
-      <span class="badge ${meta.cls}">${meta.icon} ${meta.label} · ${r.skor}</span>
+      <span class="badge ${meta.cls}">${meta.icon} ${meta.label}${isTdd ? "" : " · " + r.skor}</span>
     </div>
     <div class="bukti-line">Bukti diperlukan: ${escapeHtml(bukiLabelFull(r.ep.bukti))}</div>
-    <p class="kajian"><b>Kajian AI: </b>${escapeHtml(r.kajian || "")}</p>
+    <p class="kajian"><b>${isTdd ? "Alasan TDD (SK Direktur No.1078/SK/D/AM/III/2026): " : "Kajian AI: "}</b>${escapeHtml(r.kajian || "")}</p>
     ${r.rekomendasi ? `<p class="rekomendasi"><b>Rekomendasi: </b>${escapeHtml(r.rekomendasi)}</p>` : ""}
+    ${isTdd ? `<p class="tdd-note" style="font-size:13px;color:var(--muted-fg,#6b7280);margin-top:8px;">EP ini dikecualikan dari penilaian karena layanan terkait belum tersedia di RSU Allam Medica — tidak memerlukan draft dokumen pemenuhan.</p>` : `
     <div class="draft-btn-row">
       <button class="draft-btn" id="draftBtn-${idx}">📝 Buatkan Draft Pemenuhan</button>
     </div>
     <div id="draftBox-${idx}"></div>
+    `}
   `;
   epResultsEl.appendChild(card);
-  document.getElementById(`draftBtn-${idx}`).addEventListener("click", () => generateDraft(idx, r));
+  if (!isTdd) {
+    document.getElementById(`draftBtn-${idx}`).addEventListener("click", () => generateDraft(idx, r));
+  }
 }
 
 async function generateDraft(idx, r) {
@@ -440,6 +490,8 @@ ATURAN WAJIB (jangan dilanggar):
 4. Jika jenis dokumen berupa SPO, gunakan format kotak SPO sesuai "sistematika.SPO" — JANGAN pakai boilerplate SK/Peraturan Direktur untuk SPO.
 5. Jika jenis dokumen berupa Checklist/Formulir atau Bukti Pelaksanaan/Laporan Kegiatan, TIDAK PERLU boilerplate SK/Peraturan Direktur sama sekali — langsung buat sesuai struktur di "sistematika" masing-masing (kop RS + isi tabel/laporan), karena ini dokumen kerja/rekam implementasi, bukan regulasi.
 6. JANGAN mencampur dua judul/jenis dalam satu dokumen (mis. judul "KEPUTUSAN" tapi nomor pakai kode "PER", atau sebaliknya) — pilih satu dan konsisten dari awal sampai akhir.
+7. SEBELUM menulis draft, periksa RS_PROFILE.pelayananRS.epTidakDapatDinilai dan RS_PROFILE.pelayananRS.belumTersedia — jika EP yang diminta ternyata termasuk layanan yang belum tersedia di RSU Allam Medica, JANGAN buat draft dokumen. Balas singkat: jelaskan bahwa EP ini berstatus "Tidak Dapat Dinilai (TDD)" karena layanan terkait belum tersedia di RSU Allam Medica, kutip alasan resmi dari SK Direktur No.1078/SK/D/AM/III/2026 bila EP tersebut terdaftar eksplisit di RS_PROFILE.pelayananRS.epTidakDapatDinilai.
+8. Jika EP berkaitan dengan Bab Program Nasional PPRA (Program Pengendalian Resistensi Antimikroba), gunakan struktur dan istilah dari RS_PROFILE.literasiProgramNasional.ppra (KPRA, PGA, PPAB, PPK, AWaRe, audit Gyssens, FORKIT, indikator kepatuhan AB empirik) agar dokumen sesuai regulasi riil Kemenkes, bukan istilah generik. Jika EP berkaitan dengan bagian Program Nasional lain (KIA/MPDN, TB/SITB, HIV/SIHA, Gizi/SIGIZI, KB/SIGA), rujuk RS_PROFILE.literasiProgramNasional.strukturBabAkreditasi.programNasional dan RS_PROFILE.literasiProgramNasional.daftarPelaporanWajibKeKemenkes untuk konsistensi istilah dan kewajiban pelaporan.
 
 CARA MEMILIH JENIS DOKUMEN (perhatikan JENIS BUKTI dan bunyi Elemen Penilaian dengan teliti — jangan selalu memilih Peraturan Direktur/Panduan):
 - Jenis bukti "Regulasi" (R) DAN redaksi EP berbunyi "rumah sakit menetapkan/memiliki regulasi/kebijakan tentang..." → pilih Kebijakan/SK Direktur atau Peraturan Direktur (Pedoman/Panduan) sesuai cakupannya (satu topik sempit → SK; sistem/unit lengkap → Pedoman/Panduan via Peraturan Direktur).
@@ -450,10 +502,15 @@ CARA MEMILIH JENIS DOKUMEN (perhatikan JENIS BUKTI dan bunyi Elemen Penilaian de
 - EP tentang identifikasi/daftar/pemetaan risiko unit atau RS secara umum (manajemen risiko, MFK, K3RS) → pilih Risk Register, gunakan skoring Probabilitas x Dampak dan format kolom sesuai "metodologiMutuRisiko.contohFormatRiskRegisterRS" di bawah — isi dengan risiko yang realistis untuk pokja/unit terkait, bukan tabel kosong.
 - EP tentang analisis risiko proaktif pada satu proses/prosedur berisiko tinggi (mis. sebelum menerapkan alur baru) → pilih FMEA, gunakan tabel Severity x Occurrence x Detectability = RPN sesuai "sistematika.FMEA".
 - EP tentang investigasi/analisis insiden keselamatan pasien, kejadian sentinel, KTD, atau akar masalah → pilih RCA, ikuti 8 langkah RCA di "sistematika.RCA" dan gunakan klasifikasi grading warna (Biru/Hijau/Kuning/Merah) dari "metodologiMutuRisiko.gradingRisikoInsiden".
+- EP tentang PPRA (Program Pengendalian Resistensi Antimikroba)/penggunaan antibiotik → pilih Kebijakan/SK (untuk pembentukan KPRA) atau Pedoman/Panduan (untuk PPAB — Panduan Penggunaan Antibiotik) atau Bukti Pelaksanaan/Laporan Kegiatan (untuk laporan audit kuantitas/kualitas triwulanan) sesuai konteks EP — rujuk RS_PROFILE.literasiProgramNasional.ppra.dokumenWajibDimilikiRS.
 - Jangan default ke Peraturan Direktur atau Panduan hanya karena itu tampak "paling formal" — pilih jenis paling SPESIFIK dan LANGSUNG relevan dengan yang diminta EP. Variasikan jenis dokumen antar EP, jangan mengulang jenis yang sama terus-menerus jika konteksnya berbeda.
 
 Metodologi mutu & manajemen risiko RSU Allam Medica yang berlaku (JSON, pakai ini sebagai acuan isi bila jenis dokumen yang dipilih terkait risiko/mutu/insiden):
 ${JSON.stringify(RS_PROFILE.metodologiMutuRisiko)}
+
+Profil pelayanan riil RSU Allam Medica dan literasi Program Nasional/PPRA (rujukan wajib — lihat ATURAN WAJIB no.7 dan no.8 di atas):
+${JSON.stringify(RS_PROFILE.pelayananRS)}
+${JSON.stringify(RS_PROFILE.literasiProgramNasional)}
 
 Tulis draft LENGKAP dan SUBSTANTIF (bukan kerangka kosong) — isi dengan konten yang masuk akal dan konkret untuk RSU Allam Medica, sesuai konteks EP yang diberikan. Tandai bagian yang wajib diisi manual oleh RS (nomor dokumen final, tanggal pasti) dengan format [ISI: keterangan]. Jangan gunakan markdown heading (#) — gunakan format naskah dinas/tabel biasa. Balas HANYA dengan teks draft dokumennya saja, tanpa basa-basi pembuka/penutup, tanpa menyebutkan jenis dokumen yang dipilih di luar isi dokumen itu sendiri.`;
 
